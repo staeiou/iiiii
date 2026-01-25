@@ -69,18 +69,24 @@ class KioskApp {
             filter: { enabled: false },
             face: {
                 enabled: true,
-                detector: { rotation: true, maxDetected: 1 },
+                detector: {
+                    rotation: true,
+                    maxDetected: 3,
+                    minConfidence: 0.1,
+                    skipFrames: 1,
+                    skipTime: 120
+                },
                 mesh: { enabled: true },
                 attention: { enabled: false },
                 iris: { enabled: true },
                 description: { enabled: true },  // This provides age, gender, race
                 emotion: { enabled: true },
-                antispoof: { enabled: true },
-                liveness: { enabled: true }
+                antispoof: { enabled: false },
+                liveness: { enabled: false }
             },
             body: { enabled: false },
             hand: { enabled: false },
-            gesture: { enabled: true }
+            gesture: { enabled: false }
         };
 
         this.human = new Human.default(config);
@@ -449,6 +455,7 @@ class KioskApp {
     }
 
     updateProgress(percentage) {
+        if (!this.progressFill || !this.progressText) return;
         this.progressFill.style.width = `${percentage}%`;
         this.progressText.textContent = `${Math.floor(percentage)}%`;
     }
@@ -482,11 +489,23 @@ class KioskApp {
 
         const boxWidth = maxWidth + paddingX * 2;
         const boxHeight = lineHeight * lines.length + paddingY * 2;
-        const boxX = face.box[0];
-        let boxY = face.box[1] - boxHeight - 8;
-        if (boxY < 0) {
-            boxY = face.box[1] + face.box[3] + 8;
-        }
+        const faceX = face.box[0];
+        const faceY = face.box[1];
+        const faceW = face.box[2];
+        const faceH = face.box[3];
+
+        let boxX = faceX + faceW - boxWidth - 8;
+        let boxY = faceY + 8;
+
+        const minX = faceX + 4;
+        const minY = faceY + 4;
+        const maxX = faceX + faceW - boxWidth - 4;
+        const maxY = faceY + faceH - boxHeight - 4;
+
+        if (boxX < minX) boxX = minX;
+        if (boxX > maxX) boxX = maxX;
+        if (boxY < minY) boxY = minY;
+        if (boxY > maxY) boxY = maxY;
 
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         this.ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
