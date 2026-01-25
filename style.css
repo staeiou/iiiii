@@ -281,6 +281,10 @@ body {
     border-left: 3px solid #00ff88;
     border-radius: 4px;
     animation: slideIn 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
 }
 
 @keyframes slideIn {
@@ -299,13 +303,20 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: #00ff88;
-    margin-bottom: 0.25rem;
     font-weight: 600;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .label-value {
-    font-size: 1rem;
+    font-size: 0.9rem;
     color: #e0e0e0;
+    flex: 0 0 auto;
+    text-align: right;
+    white-space: nowrap;
 }
 
 .label-item.phase-1 { border-left-color: #00ff88; }

@@ -16,12 +16,15 @@ class KioskApp {
         this.labels = [];
         this.detectionStartTime = null;
         this.faceDetected = false;
+        this.faceHoldStart = null;
+        this.lastFaceSeen = null;
         this.currentFaceData = {};
         this.labelInterval = null;
         this.animationFrame = null;
         this.frameCount = 0;
         this.resizeObserver = null;
         this.overlayTransform = { scale: 1, offsetX: 0, offsetY: 0 };
+        this.labelTimeouts = [];
 
         this.init();
     }
@@ -195,13 +198,16 @@ class KioskApp {
                 console.log('Race:', face.race);
             }
 
+            this.lastFaceSeen = Date.now();
+
             if (!this.faceDetected) {
-                // First face detection - start the label sequence
-                console.log('🎯 FACE DETECTED FOR FIRST TIME!');
-                this.faceDetected = true;
-                this.detectionStartTime = Date.now();
-                this.instructions.classList.add('hidden');
-                this.startLabelSequence();
+                if (!this.faceHoldStart) {
+                    this.faceHoldStart = this.lastFaceSeen;
+                } else if (this.lastFaceSeen - this.faceHoldStart >= 3000) {
+                    // Face has been detected continuously for 3 seconds
+                    console.log('🎯 FACE STABLE FOR 3s - STARTING SEQUENCE');
+                    this.startLabelSequence();
+                }
             }
 
             // Update current face data
@@ -214,19 +220,6 @@ class KioskApp {
                 confidence: face.score
             };
 
-            // Build dynamic escalating labels based on elapsed time
-            const elapsed = Date.now() - this.detectionStartTime;
-            const faceLabels = this.buildEscalatingLabels(elapsed, face);
-
-            // Log drawing details every 60 frames or when just detected
-            if (this.frameCount % 60 === 0 || this.frameCount < 120) {
-                console.log('Drawing labels:', {
-                    elapsed,
-                    labelLength: faceLabels.length,
-                    firstLines: faceLabels.split('\n').slice(0, 5)
-                });
-            }
-
             // Customize drawing options
             const drawOptions = {
                 color: '#00ff88',
@@ -234,10 +227,7 @@ class KioskApp {
                 fillPolygons: false,
                 drawPoints: true,
                 drawPolygons: true,
-                drawLabels: true,  // CRITICAL: Without this, labels won't render!
-                font: 'small-caps 14px "Segoe UI"',
-                lineHeight: 18,
-                faceLabels: faceLabels
+                drawLabels: false
             };
 
             // Use a cover transform so overlays match the cropped video
@@ -258,10 +248,12 @@ class KioskApp {
         } else {
             // No face detected - potentially reset after a timeout
             console.log('No face detected in this frame');
-            if (this.faceDetected) {
-                const timeSinceDetection = Date.now() - this.detectionStartTime;
-                console.log('Time since last detection:', timeSinceDetection);
-                if (timeSinceDetection > 3000) {  // 3 seconds without detection
+            if (!this.faceDetected) {
+                this.faceHoldStart = null;
+            } else if (this.lastFaceSeen) {
+                const timeSinceSeen = Date.now() - this.lastFaceSeen;
+                console.log('Time since last detection:', timeSinceSeen);
+                if (timeSinceSeen > 10000) {  // 10 seconds without detection
                     console.log('Resetting detection due to timeout');
                     this.resetDetection();
                 }
@@ -306,177 +298,65 @@ class KioskApp {
         return topRace.race.charAt(0).toUpperCase() + topRace.race.slice(1);
     }
 
-    buildEscalatingLabels(elapsed, face) {
-        // Start with basic real data using template variables
-        let labels = `Face\nConfidence [score]%\n[gender]: [genderScore]%\nAge: [age] years`;
-
-        // Add real/live if available
-        if (face.real !== undefined) labels += '\nReal [real]%';
-        if (face.live !== undefined) labels += '\nLive [live]%';
-
-        // Add emotions
-        if (face.emotion && face.emotion.length > 0) {
-            labels += '\n[emotions]';
-        }
-
-        // Add rotation data
-        if (face.rotation?.angle) {
-            labels += '\nRoll [roll] Yaw [yaw] Pitch [pitch]';
-        }
-
-        // Add distance if available
-        if (face.distance) {
-            labels += '\nDistance: [distance]cm';
-        }
-
-        // Phase 2: Corporate Metrics (after 2 seconds)
-        if (elapsed > 2000) {
-            labels += '\n─────────────────';
-            labels += '\nSynergy Score: 8.7/10';
-        }
-
-        if (elapsed > 3000) {
-            labels += '\nHustle Culture: 92%';
-        }
-
-        if (elapsed > 4500) {
-            labels += '\nCulture Fit: 94/100';
-        }
-
-        if (elapsed > 6000) {
-            labels += '\nOKR Alignment: High';
-        }
-
-        // Phase 3: Pseudoscience (after 8 seconds)
-        if (elapsed > 8000) {
-            labels += '\n─────────────────';
-            labels += '\nAura: Corporate Blue';
-        }
-
-        if (elapsed > 9500) {
-            labels += '\nChakras Aligned: 6/7';
-        }
-
-        if (elapsed > 11000) {
-            labels += '\nSpirit Animal: Tired Owl';
-        }
-
-        if (elapsed > 13000) {
-            const signs = ['♑ Capricorn', '♒ Aquarius', '♓ Pisces', '♈ Aries', '♉ Taurus', '♊ Gemini'];
-            const sign = signs[Math.floor(Math.random() * signs.length)];
-            labels += `\nSign: ${sign}`;
-        }
-
-        // Phase 4: Existential Absurdity (after 15 seconds)
-        if (elapsed > 15000) {
-            labels += '\n─────────────────';
-            labels += '\nSoul Sold: 73.2%';
-        }
-
-        if (elapsed > 17000) {
-            labels += '\nTrue Self: 847m away';
-        }
-
-        if (elapsed > 19000) {
-            labels += '\nAtoms in Dread: 2.4T';
-        }
-
-        if (elapsed > 21000) {
-            labels += '\nChair Compat: 99.1%';
-        }
-
-        if (elapsed > 23000) {
-            labels += '\nSimulation: 67% likely';
-        }
-
-        if (elapsed > 25000) {
-            labels += '\nImposter Syndrome: 84%';
-        }
-
-        if (elapsed > 27000) {
-            labels += '\nCoffee Dependency: 9.2/10';
-        }
-
-        if (elapsed > 30000) {
-            labels += '\nLinkedIn Auth: 18%';
-        }
-
-        if (elapsed > 33000) {
-            labels += '\nPassive Income: 0.02%';
-        }
-
-        // Keep adding more existential dread indefinitely
-        if (elapsed > 35000) {
-            const extraLabels = [
-                'Work-Life Merge: 91%',
-                'AI Replacement: 78%',
-                'Burnout Index: Critical',
-                'Genuine Smile: 4d ago',
-                'Email→Slack Ratio: 3:1',
-                'Meetings→Emails: 2:1',
-                'Fluorescent Hrs: 8,247',
-                'Dream Job Δ: 100%'
-            ];
-            const cycle = Math.floor((elapsed - 35000) / 3000);
-            if (cycle < extraLabels.length) {
-                labels += '\n' + extraLabels[cycle];
-            }
-        }
-
-        return labels;
-    }
-
     // Draw functions removed - now using human.draw.canvas() and human.draw.face()
 
     startLabelSequence() {
-        let labelIndex = 0;
-        const timings = [
-            // Phase 1: Real data (display quickly)
-            { phase: 1, delay: 500, count: 1 },
-            { phase: 1, delay: 1000, count: 1 },
-            { phase: 1, delay: 1500, count: 1 },
-            { phase: 1, delay: 2000, count: 1 },
+        if (this.faceDetected) return;
 
-            // Phase 2: Corporate metrics (start slowing down)
-            { phase: 2, delay: 3000, count: 2 },
-            { phase: 2, delay: 5000, count: 2 },
-            { phase: 2, delay: 7000, count: 2 },
-            { phase: 2, delay: 9000, count: 2 },
+        this.faceDetected = true;
+        this.detectionStartTime = Date.now();
+        this.instructions.classList.add('hidden');
+        this.faceHoldStart = null;
+        this.lastFaceSeen = this.detectionStartTime;
+        this.clearLabelTimers();
+        this.labels = [];
+        this.labelsContainer.innerHTML = '';
+        this.updateProgress(0);
 
-            // Phase 3: Pseudoscience (even slower)
-            { phase: 3, delay: 11000, count: 1 },
-            { phase: 3, delay: 13000, count: 2 },
-            { phase: 3, delay: 16000, count: 2 },
-            { phase: 3, delay: 19000, count: 2 },
-
-            // Phase 4: Existential absurdity (continuous trickle)
-            { phase: 4, delay: 22000, count: 1 },
-            { phase: 4, delay: 25000, count: 2 },
-            { phase: 4, delay: 28000, count: 1 },
-            { phase: 4, delay: 31000, count: 2 },
-            { phase: 4, delay: 34000, count: 1 },
-            { phase: 4, delay: 37000, count: 2 },
-            { phase: 4, delay: 40000, count: 1 },
-            { phase: 4, delay: 43000, count: 2 }
+        const steps = [
+            { phase: 1, delay: 1200, count: 1 },
+            { phase: 1, delay: 1400, count: 1 },
+            { phase: 1, delay: 1600, count: 1 },
+            { phase: 2, delay: 2000, count: 1 },
+            { phase: 2, delay: 2400, count: 1 },
+            { phase: 2, delay: 2800, count: 1 },
+            { phase: 3, delay: 3200, count: 1 },
+            { phase: 3, delay: 3600, count: 1 },
+            { phase: 3, delay: 4000, count: 1 },
+            { phase: 4, delay: 4500, count: 1 },
+            { phase: 4, delay: 5200, count: 1 },
+            { phase: 4, delay: 6000, count: 1 }
         ];
 
-        timings.forEach(timing => {
-            setTimeout(() => {
-                this.addLabels(timing.phase, timing.count);
-                this.updateProgress(timing.delay / 430); // Progress bar never reaches 100%
-            }, timing.delay);
-        });
+        const totalSteps = steps.length;
+        const runStep = (index) => {
+            if (!this.faceDetected) return;
+            if (index >= totalSteps) {
+                this.startInfiniteLabels();
+                return;
+            }
+            const { phase, delay, count } = steps[index];
+            const timeoutId = setTimeout(() => {
+                if (!this.faceDetected) return;
+                this.addLabels(phase, count);
+                const progress = Math.min(Math.round(((index + 1) / totalSteps) * 95), 95);
+                this.updateProgress(progress);
+                runStep(index + 1);
+            }, delay);
+            this.labelTimeouts.push(timeoutId);
+        };
 
-        // Continue adding random phase 4 labels forever
-        setTimeout(() => {
-            this.labelInterval = setInterval(() => {
-                this.addLabels(4, Math.floor(Math.random() * 2) + 1);
-                // Progress bar creeps up but asymptotically approaches 99%
-                const currentProgress = parseFloat(this.progressFill.style.width) || 0;
-                const newProgress = Math.min(currentProgress + 0.5, 99);
-                this.updateProgress(newProgress);
-            }, 5000);
-        }, 45000);
+        runStep(0);
+    }
+
+    startInfiniteLabels() {
+        this.labelInterval = setInterval(() => {
+            if (!this.faceDetected) return;
+            this.addLabels(4, 1);
+            const currentProgress = parseFloat(this.progressFill.style.width) || 0;
+            const newProgress = Math.min(currentProgress + 0.3, 99);
+            this.updateProgress(newProgress);
+        }, 6500);
     }
 
     addLabels(phase, count) {
@@ -505,20 +385,24 @@ class KioskApp {
 
     resetDetection() {
         // Stop adding labels
+        this.clearLabelTimers();
+        this.faceDetected = false;
+        this.faceHoldStart = null;
+        this.lastFaceSeen = null;
+        this.detectionStartTime = null;
+        this.labels = [];
+        this.labelsContainer.innerHTML = '';
+        this.updateProgress(0);
+        this.instructions.classList.remove('hidden');
+    }
+
+    clearLabelTimers() {
         if (this.labelInterval) {
             clearInterval(this.labelInterval);
             this.labelInterval = null;
         }
-
-        // Clear everything after a delay (pretend to "process")
-        setTimeout(() => {
-            this.faceDetected = false;
-            this.detectionStartTime = null;
-            this.labels = [];
-            this.labelsContainer.innerHTML = '';
-            this.updateProgress(0);
-            this.instructions.classList.remove('hidden');
-        }, 2000);
+        this.labelTimeouts.forEach((id) => clearTimeout(id));
+        this.labelTimeouts = [];
     }
 
     showError(message) {
@@ -535,9 +419,7 @@ class KioskApp {
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
         }
-        if (this.labelInterval) {
-            clearInterval(this.labelInterval);
-        }
+        this.clearLabelTimers();
         if (this.video.srcObject) {
             this.video.srcObject.getTracks().forEach(track => track.stop());
         }
