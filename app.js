@@ -4,6 +4,7 @@ class KioskApp {
         this.video = document.getElementById('video');
         this.canvas = document.getElementById('canvas');
         this.ctx = this.canvas.getContext('2d');
+        this.videoContainer = document.querySelector('.video-container');
         this.loading = document.getElementById('loading');
         this.instructions = document.getElementById('instructions');
         this.labelsContainer = document.getElementById('labelsContainer');
@@ -19,6 +20,8 @@ class KioskApp {
         this.labelInterval = null;
         this.animationFrame = null;
         this.frameCount = 0;
+        this.resizeObserver = null;
+        this.overlayTransform = { scale: 1, offsetX: 0, offsetY: 0 };
 
         this.init();
     }
@@ -30,6 +33,9 @@ class KioskApp {
 
             // Request camera access
             await this.initCamera();
+
+            // Keep overlay aligned with responsive layout
+            this.setupResizeHandling();
 
             // Hide loading
             this.loading.style.display = 'none';
@@ -89,17 +95,60 @@ class KioskApp {
             // Wait for video to be ready
             await new Promise((resolve) => {
                 this.video.onloadedmetadata = () => {
-                    // Set canvas size to match video
-                    this.canvas.width = this.video.videoWidth;
-                    this.canvas.height = this.video.videoHeight;
                     console.log('✓ Video ready:', this.video.videoWidth, 'x', this.video.videoHeight);
-                    console.log('✓ Canvas size:', this.canvas.width, 'x', this.canvas.height);
+                    this.updateOverlayTransform();
                     resolve();
                 };
             });
         } catch (error) {
             throw new Error('Camera access denied. Please allow camera permissions.');
         }
+    }
+
+    setupResizeHandling() {
+        this.updateOverlayTransform();
+        if (typeof ResizeObserver !== 'undefined' && this.videoContainer) {
+            this.resizeObserver = new ResizeObserver(() => this.updateOverlayTransform());
+            this.resizeObserver.observe(this.videoContainer);
+        } else {
+            window.addEventListener('resize', () => this.updateOverlayTransform());
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => this.updateOverlayTransform(), 100);
+            });
+        }
+    }
+
+    updateOverlayTransform() {
+        if (!this.videoContainer) return;
+        const displayWidth = this.videoContainer.clientWidth;
+        const displayHeight = this.videoContainer.clientHeight;
+        if (!displayWidth || !displayHeight) return;
+
+        const dpr = window.devicePixelRatio || 1;
+        const pixelWidth = Math.round(displayWidth * dpr);
+        const pixelHeight = Math.round(displayHeight * dpr);
+
+        if (this.canvas.width !== pixelWidth || this.canvas.height !== pixelHeight) {
+            this.canvas.width = pixelWidth;
+            this.canvas.height = pixelHeight;
+        }
+
+        this.canvas.style.width = `${displayWidth}px`;
+        this.canvas.style.height = `${displayHeight}px`;
+
+        const videoWidth = this.video.videoWidth || displayWidth;
+        const videoHeight = this.video.videoHeight || displayHeight;
+        const scale = Math.max(displayWidth / videoWidth, displayHeight / videoHeight);
+        const scaledWidth = videoWidth * scale;
+        const scaledHeight = videoHeight * scale;
+        const offsetX = (displayWidth - scaledWidth) / 2;
+        const offsetY = (displayHeight - scaledHeight) / 2;
+
+        this.overlayTransform = {
+            scale: scale * dpr,
+            offsetX: offsetX * dpr,
+            offsetY: offsetY * dpr
+        };
     }
 
     async detect() {
@@ -128,7 +177,10 @@ class KioskApp {
                 });
             }
 
-            // Clear canvas
+            this.updateOverlayTransform();
+
+            // Clear canvas in display space
+            this.ctx.setTransform(1, 0, 0, 1, 0, 0);
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
             if (result.face && result.face.length > 0) {
@@ -188,8 +240,20 @@ class KioskApp {
                 faceLabels: faceLabels
             };
 
+            // Use a cover transform so overlays match the cropped video
+            this.ctx.save();
+            this.ctx.setTransform(
+                this.overlayTransform.scale,
+                0,
+                0,
+                this.overlayTransform.scale,
+                this.overlayTransform.offsetX,
+                this.overlayTransform.offsetY
+            );
+
             // Use Human's built-in draw function for face overlay
             this.human.draw.face(this.canvas, result.face, drawOptions);
+            this.ctx.restore();
 
         } else {
             // No face detected - potentially reset after a timeout
