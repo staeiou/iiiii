@@ -391,16 +391,22 @@ body {
 
     .main-container {
         padding-bottom: 0.5rem;
+        padding-left: 0;
+        padding-right: 0;
     }
 
     .video-container {
         flex: 0 0 auto;
         min-height: 48vh;
+        border-left: 0;
+        border-right: 0;
+        border-radius: 0;
     }
 
     .analysis-panel {
         max-height: none;
         flex: 1 1 auto;
+        margin: 0 1.5rem;
     }
 
     .labels-container {
