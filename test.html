@@ -14,7 +14,7 @@
     <h1>Human Library Debug</h1>
     <div id="container">
         <div>
-            <video id="video" width="640" height="480" autoplay playsinline></video>
+            <video id="video" width="640" height="480" autoplay playsinline muted></video>
             <canvas id="canvas" width="640" height="480"></canvas>
         </div>
         <div id="info">
@@ -140,16 +140,34 @@
 
                 output.textContent += '\n\nRequesting camera...';
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'user', width: 640, height: 480 }
+                    video: {
+                        facingMode: { ideal: 'user' },
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    },
+                    audio: false
                 });
                 video.srcObject = stream;
-                output.textContent += '\n✓ Camera ready';
+                output.textContent += '\n✓ Camera stream obtained';
 
-                await video.play();
+                // iOS: make playback explicit
+                try {
+                    await video.play();
+                    output.textContent += '\n✓ Video playback started';
+                } catch (playError) {
+                    output.textContent += '\n⚠ video.play() failed: ' + playError.name + ': ' + playError.message;
+                    console.warn('video.play() failed:', playError);
+                }
+
                 detect();
             } catch (err) {
-                output.textContent = 'ERROR: ' + err.message;
-                console.error(err);
+                const errorInfo = `ERROR: ${err.name}: ${err.message}`;
+                output.textContent = errorInfo;
+                console.error('getUserMedia failed:', {
+                    name: err?.name,
+                    message: err?.message,
+                    error: err
+                });
             }
         }
 
