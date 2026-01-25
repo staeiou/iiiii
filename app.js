@@ -100,14 +100,65 @@ class KioskApp {
     async initCamera() {
         try {
             console.log('Requesting camera access...');
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: { ideal: 'user' },
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
+            // iPad selfie cameras often default to a 16:9 crop (which feels "zoomed"),
+            // and our portrait layout then crops the sides even further. Prefer 4:3 to
+            // keep a wider field-of-view and let the UI crop vertically.
+            const cameraAttempts = [
+                {
+                    name: '4:3 (exact)',
+                    video: {
+                        facingMode: { ideal: 'user' },
+                        aspectRatio: { exact: 4 / 3 },
+                        width: { ideal: 1280 },
+                        height: { ideal: 960 }
+                    }
                 },
-                audio: false
-            });
+                {
+                    name: '4:3 (ideal)',
+                    video: {
+                        facingMode: { ideal: 'user' },
+                        aspectRatio: { ideal: 4 / 3 },
+                        width: { ideal: 1280 },
+                        height: { ideal: 960 }
+                    }
+                },
+                {
+                    name: '16:9 (fallback)',
+                    video: {
+                        facingMode: { ideal: 'user' },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                },
+                {
+                    name: 'facingMode only (fallback)',
+                    video: {
+                        facingMode: { ideal: 'user' }
+                    }
+                }
+            ];
+
+            let stream = null;
+            let lastError = null;
+            for (const attempt of cameraAttempts) {
+                try {
+                    console.log(`getUserMedia attempt: ${attempt.name}`);
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: attempt.video,
+                        audio: false
+                    });
+                    console.log(`✓ getUserMedia success: ${attempt.name}`);
+                    break;
+                } catch (error) {
+                    lastError = error;
+                    console.warn(`⚠ getUserMedia failed: ${attempt.name}`, {
+                        name: error?.name,
+                        message: error?.message
+                    });
+                }
+            }
+
+            if (!stream) throw lastError;
 
             this.video.srcObject = stream;
             console.log('✓ Camera stream obtained');
