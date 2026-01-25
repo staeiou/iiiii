@@ -1,0 +1,21 @@
+{
+  "name": "kioskgpt",
+  "version": "1.0.0",
+  "description": "An infinite corporate check-in kiosk experience that satirizes tech and corporate surveillance culture",
+  "main": "index.html",
+  "scripts": {
+    "serve": "npx serve .",
+    "start": "npx serve ."
+  },
+  "keywords": [
+    "kiosk",
+    "satire",
+    "face-detection",
+    "corporate",
+    "ai"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {}
+}

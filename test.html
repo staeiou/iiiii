@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Human Library Test</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #0a0e27; color: #fff; font-family: monospace; }
+        #container { display: flex; gap: 20px; }
+        video, canvas { border: 2px solid #00ff88; }
+        #info { flex: 1; }
+        pre { background: #1a1f3a; padding: 10px; font-size: 12px; overflow: auto; max-height: 600px; }
+    </style>
+</head>
+<body>
+    <h1>Human Library Debug</h1>
+    <div id="container">
+        <div>
+            <video id="video" width="640" height="480" autoplay playsinline></video>
+            <canvas id="canvas" width="640" height="480"></canvas>
+        </div>
+        <div id="info">
+            <h3>Detection Results:</h3>
+            <pre id="output">Waiting for detection...</pre>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/human/dist/human.js"></script>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const output = document.getElementById('output');
+
+        const config = {
+            backend: 'webgl',
+            modelBasePath: 'https://vladmandic.github.io/human-models/models/',
+            debug: true,
+            filter: { enabled: false },
+            face: {
+                enabled: true,
+                detector: { rotation: true, maxDetected: 1 },
+                mesh: { enabled: true },
+                iris: { enabled: true },
+                description: { enabled: true },
+                emotion: { enabled: true },
+                antispoof: { enabled: true },
+                liveness: { enabled: true }
+            },
+            body: { enabled: false },
+            hand: { enabled: false },
+            gesture: { enabled: true }
+        };
+
+        const human = new Human.default(config);
+        let faceDetectionStartTime = null;
+
+        function buildEscalatingLabels(elapsed, face) {
+            // Start with basic real data using template variables
+            let labels = `Face\nConfidence [score]%\n[gender]: [genderScore]%\nAge: [age] years`;
+
+            // Add emotions
+            if (face.emotion && face.emotion.length > 0) {
+                labels += '\n[emotions]';
+            }
+
+            // Add rotation data
+            if (face.rotation?.angle) {
+                labels += '\nRoll [roll] Yaw [yaw] Pitch [pitch]';
+            }
+
+            // Add distance if available
+            if (face.distance) {
+                labels += '\nDistance: [distance]cm';
+            }
+
+            // Phase 2: Corporate Metrics (after 2 seconds)
+            if (elapsed > 2000) {
+                labels += '\n─────────────────';
+                labels += '\nSynergy Score: 8.7/10';
+            }
+
+            if (elapsed > 3000) {
+                labels += '\nHustle Culture: 92%';
+            }
+
+            if (elapsed > 4500) {
+                labels += '\nCulture Fit: 94/100';
+            }
+
+            if (elapsed > 6000) {
+                labels += '\nOKR Alignment: High';
+            }
+
+            // Phase 3: Pseudoscience (after 8 seconds)
+            if (elapsed > 8000) {
+                labels += '\n─────────────────';
+                labels += '\nAura: Corporate Blue';
+            }
+
+            if (elapsed > 9500) {
+                labels += '\nChakras Aligned: 6/7';
+            }
+
+            if (elapsed > 11000) {
+                labels += '\nSpirit Animal: Tired Owl';
+            }
+
+            // Phase 4: Existential Absurdity (after 15 seconds)
+            if (elapsed > 15000) {
+                labels += '\n─────────────────';
+                labels += '\nSoul Sold: 73.2%';
+            }
+
+            if (elapsed > 17000) {
+                labels += '\nTrue Self: 847m away';
+            }
+
+            if (elapsed > 19000) {
+                labels += '\nAtoms in Dread: 2.4T';
+            }
+
+            if (elapsed > 21000) {
+                labels += '\nChair Compat: 99.1%';
+            }
+
+            if (elapsed > 23000) {
+                labels += '\nSimulation: 67% likely';
+            }
+
+            if (elapsed > 25000) {
+                labels += '\nImposter Syndrome: 84%';
+            }
+
+            return labels;
+        }
+
+        async function init() {
+            try {
+                output.textContent = 'Loading Human library...';
+                await human.load();
+                output.textContent += '\n✓ Human loaded\nBackend: ' + human.backend;
+
+                output.textContent += '\n\nRequesting camera...';
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user', width: 640, height: 480 }
+                });
+                video.srcObject = stream;
+                output.textContent += '\n✓ Camera ready';
+
+                await video.play();
+                detect();
+            } catch (err) {
+                output.textContent = 'ERROR: ' + err.message;
+                console.error(err);
+            }
+        }
+
+        async function detect() {
+            const result = await human.detect(video);
+
+            // Draw video frame to canvas
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Track when face detection starts
+            if (result.face && result.face.length > 0) {
+                if (!faceDetectionStartTime) {
+                    faceDetectionStartTime = Date.now();
+                }
+
+                const elapsed = Date.now() - faceDetectionStartTime;
+                const faceLabels = buildEscalatingLabels(elapsed, result.face[0]);
+
+                // Custom draw options with dynamic escalating labels
+                const drawOptions = {
+                    color: '#00ff88',
+                    labelColor: '#00ff88',
+                    drawLabels: true,  // CRITICAL: Without this, labels won't render!
+                    font: 'small-caps 14px "Segoe UI"',
+                    lineHeight: 18,
+                    faceLabels: faceLabels
+                };
+
+                // Draw face detections with custom labels
+                human.draw.face(canvas, result.face, drawOptions);
+            } else {
+                // Reset timer if no face detected
+                faceDetectionStartTime = null;
+            }
+
+            // Display results
+            if (result.face && result.face.length > 0) {
+                const face = result.face[0];
+                output.textContent = 'FACE DETECTED!\n\n' +
+                    JSON.stringify({
+                        age: face.age,
+                        gender: face.gender,
+                        genderScore: face.genderScore,
+                        emotion: face.emotion,
+                        race: face.race,
+                        score: face.score,
+                        meshPoints: face.mesh?.length || 0
+                    }, null, 2);
+            } else {
+                output.textContent = 'No face detected\n\nLast result:\n' +
+                    JSON.stringify(result.performance, null, 2);
+            }
+
+            requestAnimationFrame(detect);
+        }
+
+        init();
+    </script>
+</body>
+</html>
