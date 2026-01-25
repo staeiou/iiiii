@@ -10,6 +10,8 @@ body {
     color: #e0e0e0;
     overflow: hidden;
     height: 100vh;
+    height: 100dvh;
+    min-height: 100svh;
     width: 100vw;
 }
 
@@ -17,6 +19,8 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    height: 100dvh;
+    min-height: 100svh;
     width: 100vw;
 }
 
@@ -102,6 +106,7 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
     display: block;
 }
 
@@ -353,15 +358,27 @@ body {
 @media (max-width: 1024px) {
     .main-container {
         flex-direction: column;
+        gap: 1.5rem;
+        padding: 1.5rem;
     }
 
     .analysis-panel {
-        max-height: 40vh;
+        max-height: 38vh;
     }
 }
 
-@media (orientation: portrait) {
-    .main-container {
-        flex-direction: column;
+@media (max-width: 1024px) and (orientation: portrait) {
+    .system-header,
+    .system-footer {
+        padding: 0.75rem 1.25rem;
+    }
+
+    .video-container {
+        flex: 0 0 auto;
+        min-height: 48vh;
+    }
+
+    .analysis-panel {
+        max-height: 32vh;
     }
 }
