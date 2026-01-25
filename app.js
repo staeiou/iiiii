@@ -162,9 +162,6 @@ class KioskApp {
                 confidence: face.score
             };
 
-            // Draw video frame to canvas first
-            this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
-
             // Build dynamic escalating labels based on elapsed time
             const elapsed = Date.now() - this.detectionStartTime;
             const faceLabels = this.buildEscalatingLabels(elapsed, face);
