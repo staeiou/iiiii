@@ -608,9 +608,9 @@ class KioskApp {
         this.instructions.innerHTML = `
             <h2>Do you consent to be scanned and profiled?</h2>
             <p>If so, remain still for ${safeSeconds} seconds.</p>
-            <p class="instructions-sub">By lingering in frame, you agree to the Institutional Inference Terms (rev. whenever convenient).</p>
-            <p class="instructions-sub">Your likeness may be converted into insights, metrics, and a pleasing chart for our annual report.</p>
-            <p class="instructions-sub">Opting out is easy: simply disappear from view and resume existing as a privacy problem elsewhere.</p>
+            <p class="instructions-sub">By lingering in frame, you consent to the social-technical contract of surveillance capitalism.</p>
+            <p class="instructions-sub">Your likeness will be extracted, mined, correlated, modeled, and used against you in every way.</p>
+            <p class="instructions-sub">Opting out is easy: leave this space, abandon this society, and just go live in the wilderness.</p>
         `;
         this.instructions.classList.remove('hidden');
     }
