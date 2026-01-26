@@ -89,9 +89,7 @@ const LabelGenerator = {
         { category: 'Compliment Absorption Rate', getValue: () => `${randInt(0, 66)}%` },
         { category: 'Criticism Retention Half‑Life', getValue: () => `${randInt(7, 240)} days` },
         { category: 'Guilt Multiplier', getValue: () => `${randFloat(1.0, 6.2, 1).toFixed(1)}x` },
-        { category: 'Blood Type', getValue: () => 'Oh, No' },
-        { category: 'Blood Type', getValue: () => 'KPI+' },
-        { category: 'Blood Type', getValue: () => 'Red' }
+        { category: 'Blood Type', getValue: () => ['Oh, No', 'KPI+', 'Red'][randInt(0, 2)] }
     ],
 
     // Get labels for a specific phase

@@ -25,6 +25,7 @@ class KioskApp {
         this.resizeObserver = null;
         this.overlayTransform = { scale: 1, offsetX: 0, offsetY: 0 };
         this.labelTimeouts = [];
+        this.labelDecks = {};
 
         this.init();
     }
@@ -439,6 +440,7 @@ class KioskApp {
         this.labels = [];
         this.labelsContainer.innerHTML = '';
         this.updateProgress(0);
+        this.resetLabelDecks();
 
         const steps = [
             { phase: 1, delay: 1200, count: 1 },
@@ -476,11 +478,72 @@ class KioskApp {
         runStep(0);
     }
 
+    resetLabelDecks() {
+        this.labelDecks = {};
+        for (let phase = 1; phase <= 4; phase++) {
+            this.labelDecks[phase] = this.buildShuffledLabelDeck(phase);
+        }
+    }
+
+    buildShuffledLabelDeck(phase) {
+        const key = `phase${phase}Labels`;
+        const defs = (typeof LabelGenerator !== 'undefined' && Array.isArray(LabelGenerator[key])) ? LabelGenerator[key] : [];
+        const deck = [...defs];
+        for (let i = deck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+        return deck;
+    }
+
+    drawLabelsFromDeck(phase, count) {
+        const labels = [];
+        if (count <= 0) return labels;
+
+        while (labels.length < count) {
+            const deck = this.labelDecks?.[phase];
+            if (!Array.isArray(deck) || deck.length === 0) break;
+
+            const def = deck.pop();
+            labels.push({
+                category: def.category,
+                value: def.getValue(this.currentFaceData),
+                phase: phase
+            });
+        }
+
+        return labels;
+    }
+
+    pickPhaseWithRemainingLabels() {
+        const weights = {
+            1: 0.05,
+            2: 0.15,
+            3: 0.25,
+            4: 0.55
+        };
+
+        const available = [1, 2, 3, 4].filter((phase) => (this.labelDecks?.[phase]?.length || 0) > 0);
+        if (!available.length) return null;
+
+        const totalWeight = available.reduce((sum, phase) => sum + (weights[phase] || 0), 0);
+        let roll = Math.random() * totalWeight;
+        for (const phase of available) {
+            roll -= (weights[phase] || 0);
+            if (roll <= 0) return phase;
+        }
+        return available[available.length - 1];
+    }
+
     startInfiniteLabels() {
         this.labelInterval = setInterval(() => {
             if (!this.faceDetected) return;
-            const roll = Math.random();
-            const phase = roll < 0.05 ? 1 : roll < 0.20 ? 2 : roll < 0.45 ? 3 : 4;
+            const phase = this.pickPhaseWithRemainingLabels();
+            if (!phase) {
+                this.clearLabelTimers();
+                this.updateProgress(99);
+                return;
+            }
             this.addLabels(phase, 1);
             const currentProgress = this.progressFill ? (parseFloat(this.progressFill.style.width) || 0) : 0;
             const newProgress = Math.min(currentProgress + 0.3, 99);
@@ -489,7 +552,7 @@ class KioskApp {
     }
 
     addLabels(phase, count) {
-        const newLabels = LabelGenerator.getRandomLabels(phase, count, this.currentFaceData);
+        const newLabels = this.drawLabelsFromDeck(phase, count);
 
         newLabels.forEach(label => {
             const labelEl = document.createElement('div');
