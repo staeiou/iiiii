@@ -965,30 +965,36 @@ class KioskApp {
             const displayWidth = this.videoContainer?.clientWidth || videoWidth;
             const displayHeight = this.videoContainer?.clientHeight || videoHeight;
             const isPortrait = displayHeight >= displayWidth;
+            const transform = this.overlayTransform || { scale: 1, offsetX: 0, offsetY: 0 };
+            const scale = transform.scale || 1;
+            const viewLeft = (0 - transform.offsetX) / scale;
+            const viewTop = (0 - transform.offsetY) / scale;
+            const viewRight = (this.canvas.width - transform.offsetX) / scale;
+            const viewBottom = (this.canvas.height - transform.offsetY) / scale;
 
             if (isPortrait) {
                 const aboveY = faceY - boxHeight - margin;
                 const belowY = faceY + faceH + margin;
                 boxX = faceX + (faceW / 2) - (boxWidth / 2);
-                if (aboveY >= margin) {
+                if (aboveY >= viewTop + margin) {
                     boxY = aboveY;
-                } else if (belowY + boxHeight <= videoHeight - margin) {
+                } else if (belowY + boxHeight <= viewBottom - margin) {
                     boxY = belowY;
                 } else {
-                    boxY = Math.min(Math.max(margin, faceY), videoHeight - boxHeight - margin);
+                    boxY = Math.min(Math.max(viewTop + margin, faceY), viewBottom - boxHeight - margin);
                 }
             } else {
                 boxX = faceX + faceW + margin;
                 boxY = faceY + (faceH / 2) - (boxHeight / 2);
-                if (boxX + boxWidth > videoWidth - margin) {
+                if (boxX + boxWidth > viewRight - margin) {
                     boxX = faceX - boxWidth - margin;
                 }
             }
 
-            if (boxX < margin) boxX = margin;
-            if (boxX + boxWidth > videoWidth - margin) boxX = videoWidth - boxWidth - margin;
-            if (boxY < margin) boxY = margin;
-            if (boxY + boxHeight > videoHeight - margin) boxY = videoHeight - boxHeight - margin;
+            if (boxX < viewLeft + margin) boxX = viewLeft + margin;
+            if (boxX + boxWidth > viewRight - margin) boxX = viewRight - boxWidth - margin;
+            if (boxY < viewTop + margin) boxY = viewTop + margin;
+            if (boxY + boxHeight > viewBottom - margin) boxY = viewBottom - boxHeight - margin;
 
             this.faceLabelAnchor = { x: boxX, y: boxY };
             this.faceLabelAnchorDirty = false;
