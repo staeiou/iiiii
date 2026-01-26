@@ -50,36 +50,16 @@ const LabelGenerator = {
                 const types = ['INTJ', 'INTP', 'INTJ', 'INTP', 'INFJ', 'INFP', 'INFJ', 'INFP'];
                 return types[randInt(0, types.length - 1)];
             }
-        },
-        {
-            category: 'Enneagram',
-            getValue: () => {
-                const types = [
-                    'Type 1 (Reformer)',
-                    'Type 2 (Helper)',
-                    'Type 3 (Achiever)',
-                    'Type 4 (Individualist)',
-                    'Type 5 (Investigator)',
-                    'Type 6 (Loyalist)',
-                    'Type 7 (Enthusiast)',
-                    'Type 8 (Challenger)',
-                    'Type 9 (Peacemaker)'
-                ];
-                return types[randInt(0, types.length - 1)];
-            }
         }
     ],
 
     // Phase 1: Psychometric inference (confident, quantified, vague)
     phase1Labels: [
-        { category: 'Psychometric Profile Completeness', getValue: () => `${randInt(92, 99)}%` },
-        { category: 'Profile Inference Confidence', getValue: () => randFloat(0.72, 0.99, 2).toFixed(2) },
-        { category: 'Behavioral Predictability', getValue: () => `${randInt(62, 99)}%` },
-        { category: 'Vibe Fit Score', getValue: () => `${randInt(54, 99)}/100` },
+        { category: 'Vibe Fit Score', getValue: () => `${randInt(2, 99)}/100` },
         { category: 'Aesthetic Consistency', getValue: () => `${randInt(35, 96)}%` },
         { category: 'Smile Sincerity Probability', getValue: () => randFloat(0.04, 0.36, 2).toFixed(2) },
-        { category: 'Eye Contact Compliance', getValue: () => `${randInt(38, 97)}%` },
-        { category: 'Identity Fragmentation', getValue: () => `${randFloat(1.0, 8.9, 1).toFixed(1)} distinct personas` }
+        { category: 'Eye Contact Rate', getValue: () => `${randInt(38, 97)}%` },
+        { category: 'Identity Fragmentation', getValue: () => `${randFloat(3.0, 8.9, 1).toFixed(1)} distinct personas` }
 
     ],
 

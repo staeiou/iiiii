@@ -29,6 +29,7 @@ class KioskApp {
         this.faceLabelQueue = [];
         this.faceLabelAnchor = null;
         this.faceLabelAnchorDirty = true;
+        this.lastFaceRender = null;
         const defaultPalette = ['#4f75ff', '#33d1cc', '#f4d35e'];
         const personalityPalette = ['#f4d35e'];
         this.labelColorRules = {
@@ -443,12 +444,16 @@ class KioskApp {
 
             this.updateOverlayTransform();
 
+            const wallNow = Date.now();
+
             // Clear canvas in display space
             this.ctx.setTransform(1, 0, 0, 1, 0, 0);
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-            if (result.face && result.face.length > 0) {
-            const face = result.face[0];
+            const faceDetectedNow = result.face && result.face.length > 0;
+            const face = faceDetectedNow ? result.face[0] : null;
+
+            if (faceDetectedNow) {
 
             // Debug log to see what we're getting
             if (!this.faceDetected) {
@@ -459,7 +464,8 @@ class KioskApp {
                 console.log('Race:', face.race);
             }
 
-            this.lastFaceSeen = Date.now();
+            this.lastFaceSeen = wallNow;
+            this.lastFaceRender = face;
 
             if (!this.faceDetected) {
                 if (!this.faceHoldStart) {
@@ -504,16 +510,35 @@ class KioskApp {
 
             // Use Human's built-in draw function for face overlay
             this.human.draw.face(this.canvas, result.face, drawOptions);
-            this.drawFaceLabel(face);
             this.ctx.restore();
 
-        } else {
+        }
+
+        const renderFace = faceDetectedNow
+            ? face
+            : (this.lastFaceRender && this.lastFaceSeen && (wallNow - this.lastFaceSeen <= 3000))
+                ? this.lastFaceRender
+                : null;
+
+        if (renderFace) {
+            this.ctx.save();
+            this.ctx.setTransform(
+                this.overlayTransform.scale,
+                0,
+                0,
+                this.overlayTransform.scale,
+                this.overlayTransform.offsetX,
+                this.overlayTransform.offsetY
+            );
+            this.drawFaceLabel(renderFace);
+            this.ctx.restore();
+        } else if (!faceDetectedNow) {
             // No face detected - potentially reset after a timeout
             console.log('No face detected in this frame');
             if (!this.faceDetected) {
                 this.faceHoldStart = null;
             } else if (this.lastFaceSeen) {
-                const timeSinceSeen = Date.now() - this.lastFaceSeen;
+                const timeSinceSeen = wallNow - this.lastFaceSeen;
                 console.log('Time since last detection:', timeSinceSeen);
                 if (timeSinceSeen > 10000) {  // 10 seconds without detection
                     console.log('Resetting detection due to timeout');
@@ -583,12 +608,15 @@ class KioskApp {
             Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
 
         const steps = [];
+        let firstStep = true;
         const phasesInOrder = [0, 1, 2, 3, 4];
         for (const phase of phasesInOrder) {
             const deck = this.labelDecks?.[phase];
             const count = Array.isArray(deck) ? deck.length : 0;
             for (let i = 0; i < count; i++) {
-                steps.push({ phase, delay: randomPause(), count: 1 });
+                const delay = firstStep ? 0 : randomPause();
+                steps.push({ phase, delay, count: 1 });
+                firstStep = false;
             }
         }
 
@@ -868,42 +896,7 @@ class KioskApp {
     }
 
     getValueColor(labelName, valueText) {
-        const defaultColor = '#ffffff';
-        if (!valueText) return defaultColor;
-        const value = String(valueText);
-
-        if (/\b\d+(\.\d+)?x\b/i.test(value)) return defaultColor;
-        if (/\b\d+(\.\d+)?\s*hz\b/i.test(value)) return defaultColor;
-        if (/\b\d+(\.\d+)?\s*db\b/i.test(value)) return defaultColor;
-
-        const rule = this.getLabelColorRule(labelName);
-        if (!rule) return defaultColor;
-
-        const numericValue = this.extractNumericValue(value, rule.parse || 'auto');
-        if (numericValue === null || numericValue === undefined || Number.isNaN(numericValue)) {
-            return defaultColor;
-        }
-
-        if (rule.mode === 'bands') {
-            const bands = Array.isArray(rule.bands) ? rule.bands : [];
-            for (const band of bands) {
-                if (band.max === undefined || numericValue <= band.max) {
-                    return band.color || defaultColor;
-                }
-            }
-            return bands.length ? (bands[bands.length - 1].color || defaultColor) : defaultColor;
-        }
-
-        if (rule.mode === 'gradient') {
-            const range = rule.range || { min: 0, max: 1 };
-            const span = range.max - range.min;
-            if (!Number.isFinite(span) || span <= 0) return defaultColor;
-            const ratio = (numericValue - range.min) / span;
-            const palette = rule.palette || this.labelColorRules?.defaultPalette || [];
-            return this.getGradientColor(palette, ratio);
-        }
-
-        return defaultColor;
+        return '#f4d35e';
     }
 
     drawFaceLabel(face) {
