@@ -27,6 +27,8 @@ class KioskApp {
         this.labelTimeouts = [];
         this.labelDecks = {};
         this.faceLabelQueue = [];
+        this.faceLabelAnchor = null;
+        this.faceLabelAnchorDirty = true;
 
         this.init();
     }
@@ -248,10 +250,26 @@ class KioskApp {
         if (!logoText) return;
         logoText.setAttribute('title', 'Tap to toggle labels panel');
         logoText.setAttribute('role', 'button');
+        const storageKey = 'kiosk:sidebar-hidden';
+        try {
+            const saved = localStorage.getItem(storageKey);
+            if (saved === '1') {
+                document.body.classList.add('sidebar-hidden');
+            }
+        } catch (error) {
+            console.warn('layout preference read failed:', error);
+        }
         logoText.addEventListener('click', () => {
             document.body.classList.toggle('sidebar-hidden');
+            try {
+                const isHidden = document.body.classList.contains('sidebar-hidden');
+                localStorage.setItem(storageKey, isHidden ? '1' : '0');
+            } catch (error) {
+                console.warn('layout preference write failed:', error);
+            }
             setTimeout(() => this.updateOverlayTransform(), 50);
         });
+        setTimeout(() => this.updateOverlayTransform(), 50);
     }
 
     updateOverlayTransform() {
@@ -281,7 +299,10 @@ class KioskApp {
 
             const videoWidth = this.video.videoWidth || displayWidth;
             const videoHeight = this.video.videoHeight || displayHeight;
-            const scale = Math.min(displayWidth / videoWidth, displayHeight / videoHeight);
+            const useContain = document.body.classList.contains('sidebar-hidden');
+            const scale = useContain
+                ? Math.min(displayWidth / videoWidth, displayHeight / videoHeight)
+                : Math.max(displayWidth / videoWidth, displayHeight / videoHeight);
             const scaledWidth = videoWidth * scale;
             const scaledHeight = videoHeight * scale;
             const offsetX = (displayWidth - scaledWidth) / 2;
@@ -462,6 +483,8 @@ class KioskApp {
         this.labels = [];
         this.labelsContainer.innerHTML = '';
         this.faceLabelQueue = [];
+        this.faceLabelAnchor = null;
+        this.faceLabelAnchorDirty = true;
         this.updateProgress(0);
         this.resetLabelDecks();
 
@@ -615,6 +638,7 @@ class KioskApp {
         while (this.faceLabelQueue.length > 10) {
             this.faceLabelQueue.shift();
         }
+        this.faceLabelAnchorDirty = true;
     }
 
     updateProgress(percentage) {
@@ -661,24 +685,48 @@ class KioskApp {
         const faceW = face.box[2];
         const faceH = face.box[3];
 
-        const margin = 8;
-        const videoWidth = this.video.videoWidth || (faceX + faceW);
-        const videoHeight = this.video.videoHeight || (faceY + faceH);
+        let boxX;
+        let boxY;
+        if (!this.faceLabelAnchor || this.faceLabelAnchorDirty) {
+            const margin = 8;
+            const videoWidth = this.video.videoWidth || (faceX + faceW);
+            const videoHeight = this.video.videoHeight || (faceY + faceH);
+            const displayWidth = this.videoContainer?.clientWidth || videoWidth;
+            const displayHeight = this.videoContainer?.clientHeight || videoHeight;
+            const isPortrait = displayHeight >= displayWidth;
 
-        let boxX = faceX + faceW + margin;
-        let boxY = faceY;
+            if (isPortrait) {
+                const aboveY = faceY - boxHeight - margin;
+                const belowY = faceY + faceH + margin;
+                boxX = faceX + (faceW / 2) - (boxWidth / 2);
+                if (aboveY >= margin) {
+                    boxY = aboveY;
+                } else if (belowY + boxHeight <= videoHeight - margin) {
+                    boxY = belowY;
+                } else {
+                    boxY = Math.min(Math.max(margin, faceY), videoHeight - boxHeight - margin);
+                }
+            } else {
+                boxX = faceX + faceW + margin;
+                boxY = faceY + (faceH / 2) - (boxHeight / 2);
+                if (boxX + boxWidth > videoWidth - margin) {
+                    boxX = faceX - boxWidth - margin;
+                }
+            }
 
-        if (boxX + boxWidth > videoWidth - margin) {
-            boxX = faceX - boxWidth - margin;
+            if (boxX < margin) boxX = margin;
+            if (boxX + boxWidth > videoWidth - margin) boxX = videoWidth - boxWidth - margin;
+            if (boxY < margin) boxY = margin;
+            if (boxY + boxHeight > videoHeight - margin) boxY = videoHeight - boxHeight - margin;
+
+            this.faceLabelAnchor = { x: boxX, y: boxY };
+            this.faceLabelAnchorDirty = false;
+        } else {
+            boxX = this.faceLabelAnchor.x;
+            boxY = this.faceLabelAnchor.y;
         }
 
-        if (boxX < margin) boxX = margin;
-        if (boxX + boxWidth > videoWidth - margin) boxX = videoWidth - boxWidth - margin;
-
-        if (boxY < margin) boxY = margin;
-        if (boxY + boxHeight > videoHeight - margin) boxY = videoHeight - boxHeight - margin;
-
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
         this.ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
         this.ctx.fillStyle = '#00ff88';
@@ -696,6 +744,8 @@ class KioskApp {
         this.detectionStartTime = null;
         this.labels = [];
         this.faceLabelQueue = [];
+        this.faceLabelAnchor = null;
+        this.faceLabelAnchorDirty = true;
         this.labelsContainer.innerHTML = '';
         this.updateProgress(0);
         this.instructions.classList.remove('hidden');
