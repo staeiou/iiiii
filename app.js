@@ -475,11 +475,7 @@ class KioskApp {
             if (!this.faceDetected) {
                 if (this.consentActive) {
                     this.updateConsentCountdown(this.lastFaceSeen);
-                } else if (!this.faceHoldStart) {
-                    this.faceHoldStart = this.lastFaceSeen;
-                } else if (this.lastFaceSeen - this.faceHoldStart >= 3000) {
-                    // Face has been detected continuously for 3 seconds
-                    console.log('🎯 FACE STABLE FOR 3s - STARTING CONSENT COUNTDOWN');
+                } else {
                     this.startConsentCountdown();
                 }
             }
