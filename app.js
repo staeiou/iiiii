@@ -10,6 +10,7 @@ class KioskApp {
         this.labelsContainer = document.getElementById('labelsContainer');
         this.progressFill = document.getElementById('progressFill');
         this.progressText = document.getElementById('progressText');
+        this.defaultInstructionsHtml = this.instructions ? this.instructions.innerHTML : '';
 
         this.human = null;
         this.currentPhase = 0;
@@ -19,6 +20,10 @@ class KioskApp {
         this.faceHoldStart = null;
         this.lastFaceSeen = null;
         this.currentFaceData = {};
+        this.consentActive = false;
+        this.consentStartTime = null;
+        this.consentLastSeconds = null;
+        this.consentDurationMs = 10000;
         this.labelInterval = null;
         this.animationFrame = null;
         this.frameCount = 0;
@@ -468,12 +473,14 @@ class KioskApp {
             this.lastFaceRender = face;
 
             if (!this.faceDetected) {
-                if (!this.faceHoldStart) {
+                if (this.consentActive) {
+                    this.updateConsentCountdown(this.lastFaceSeen);
+                } else if (!this.faceHoldStart) {
                     this.faceHoldStart = this.lastFaceSeen;
                 } else if (this.lastFaceSeen - this.faceHoldStart >= 3000) {
                     // Face has been detected continuously for 3 seconds
-                    console.log('🎯 FACE STABLE FOR 3s - STARTING SEQUENCE');
-                    this.startLabelSequence();
+                    console.log('🎯 FACE STABLE FOR 3s - STARTING CONSENT COUNTDOWN');
+                    this.startConsentCountdown();
                 }
             }
 
@@ -520,7 +527,7 @@ class KioskApp {
                 ? this.lastFaceRender
                 : null;
 
-        if (renderFace) {
+        if (renderFace && this.faceDetected) {
             this.ctx.save();
             this.ctx.setTransform(
                 this.overlayTransform.scale,
@@ -537,6 +544,9 @@ class KioskApp {
             console.log('No face detected in this frame');
             if (!this.faceDetected) {
                 this.faceHoldStart = null;
+                if (this.consentActive) {
+                    this.cancelConsentCountdown();
+                }
             } else if (this.lastFaceSeen) {
                 const timeSinceSeen = wallNow - this.lastFaceSeen;
                 console.log('Time since last detection:', timeSinceSeen);
@@ -586,6 +596,58 @@ class KioskApp {
     }
 
     // Draw functions removed - now using human.draw.canvas() and human.draw.face()
+    showDefaultInstructions() {
+        if (!this.instructions) return;
+        this.instructions.innerHTML = this.defaultInstructionsHtml;
+        this.instructions.classList.remove('hidden');
+    }
+
+    showConsentInstructions(secondsLeft) {
+        if (!this.instructions) return;
+        const safeSeconds = Math.max(1, Math.floor(secondsLeft));
+        this.instructions.innerHTML = `
+            <h2>Do you consent to be scanned and profiled?</h2>
+            <p>If so, remain still for ${safeSeconds} seconds.</p>
+            <p class="instructions-sub">By lingering in frame, you agree to the Institutional Inference Terms (rev. whenever convenient).</p>
+            <p class="instructions-sub">Your likeness may be converted into insights, metrics, and a pleasing chart for our annual report.</p>
+            <p class="instructions-sub">Opting out is easy: simply disappear from view and resume existing as a privacy problem elsewhere.</p>
+        `;
+        this.instructions.classList.remove('hidden');
+    }
+
+    startConsentCountdown() {
+        if (this.consentActive || this.faceDetected) return;
+        this.consentActive = true;
+        this.consentStartTime = Date.now();
+        this.consentLastSeconds = null;
+        this.faceHoldStart = null;
+        this.showConsentInstructions(Math.ceil(this.consentDurationMs / 1000));
+    }
+
+    updateConsentCountdown(now) {
+        if (!this.consentActive) return;
+        const elapsed = now - this.consentStartTime;
+        const remainingMs = Math.max(this.consentDurationMs - elapsed, 0);
+        const remainingSeconds = Math.ceil(remainingMs / 1000);
+        if (remainingSeconds !== this.consentLastSeconds) {
+            this.showConsentInstructions(remainingSeconds);
+            this.consentLastSeconds = remainingSeconds;
+        }
+        if (remainingMs <= 0) {
+            this.consentActive = false;
+            this.consentStartTime = null;
+            this.consentLastSeconds = null;
+            this.startLabelSequence();
+        }
+    }
+
+    cancelConsentCountdown() {
+        if (!this.consentActive) return;
+        this.consentActive = false;
+        this.consentStartTime = null;
+        this.consentLastSeconds = null;
+        this.showDefaultInstructions();
+    }
 
     startLabelSequence() {
         if (this.faceDetected) return;
@@ -1040,9 +1102,12 @@ class KioskApp {
         this.faceLabelQueue = [];
         this.faceLabelAnchor = null;
         this.faceLabelAnchorDirty = true;
+        this.consentActive = false;
+        this.consentStartTime = null;
+        this.consentLastSeconds = null;
         this.labelsContainer.innerHTML = '';
         this.updateProgress(0);
-        this.instructions.classList.remove('hidden');
+        this.showDefaultInstructions();
     }
 
     async softReset() {
