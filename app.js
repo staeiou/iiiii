@@ -29,11 +29,69 @@ class KioskApp {
         this.faceLabelQueue = [];
         this.faceLabelAnchor = null;
         this.faceLabelAnchorDirty = true;
-        this.labelValueRanges = {
-            Confidence: { min: 0, max: 100 },
-            Age: { min: 0, max: 100 },
-            'Profile Inference Confidence': { min: 0, max: 1 },
-            'Smile Sincerity Probability': { min: 0, max: 1 }
+        const defaultPalette = ['#4f75ff', '#33d1cc', '#f4d35e'];
+        const personalityPalette = ['#f4d35e'];
+        this.labelColorRules = {
+            defaultPalette,
+            exact: {
+                Confidence: { mode: 'gradient', parse: 'percent', range: { min: 0, max: 100 } },
+                Age: { mode: 'gradient', parse: 'number', range: { min: 0, max: 100 } },
+                Gender: { mode: 'gradient', parse: 'percent', range: { min: 0, max: 100 } },
+                'Exhaustion Level': { mode: 'gradient', parse: 'percent', range: { min: 12, max: 98 } },
+                'Stress Level': { mode: 'gradient', parse: 'percent', range: { min: 8, max: 99 } },
+                'Energy Level': { mode: 'gradient', parse: 'percent', range: { min: 6, max: 97 } },
+                'Personality: Openness': { mode: 'gradient', parse: 'percent', range: { min: 12, max: 98 }, palette: personalityPalette },
+                'Personality: Conscientiousness': { mode: 'gradient', parse: 'percent', range: { min: 12, max: 98 }, palette: personalityPalette },
+                'Personality: Extraversion': { mode: 'gradient', parse: 'percent', range: { min: 1, max: 30 }, palette: personalityPalette },
+                'Personality: Agreeableness': { mode: 'gradient', parse: 'percent', range: { min: 12, max: 98 }, palette: personalityPalette },
+                'Personality: Neuroticism': { mode: 'gradient', parse: 'percent', range: { min: 12, max: 98 }, palette: personalityPalette },
+                'Psychometric Profile Completeness': { mode: 'gradient', parse: 'percent', range: { min: 92, max: 99 } },
+                'Profile Inference Confidence': { mode: 'gradient', parse: 'ratio', range: { min: 0.72, max: 0.99 } },
+                'Behavioral Predictability': { mode: 'gradient', parse: 'percent', range: { min: 62, max: 99 } },
+                'Vibe Fit Score': { mode: 'gradient', parse: 'percent', range: { min: 54, max: 99 } },
+                'Aesthetic Consistency': { mode: 'gradient', parse: 'percent', range: { min: 35, max: 96 } },
+                'Smile Sincerity Probability': { mode: 'gradient', parse: 'ratio', range: { min: 0.04, max: 0.36 } },
+                'Eye Contact Compliance': { mode: 'gradient', parse: 'percent', range: { min: 38, max: 97 } },
+                'Identity Fragmentation': { mode: 'gradient', parse: 'number', range: { min: 1.0, max: 8.9 } },
+                'Sleep Debt': { mode: 'gradient', parse: 'hm', range: { min: 0, max: 599 } },
+                'Net Institutional Value': { mode: 'gradient', parse: 'number', range: { min: 3.5, max: 38.0 } },
+                'Original Thought Suppression': { mode: 'gradient', parse: 'percent', range: { min: 72, max: 99 } },
+                'LinkedIn Profile Authenticity': { mode: 'gradient', parse: 'percent', range: { min: 8, max: 54 } },
+                'Percent of Soul Sold': { mode: 'gradient', parse: 'percent', range: { min: 12, max: 99 } },
+                'Unpaid Emotional Labor': { mode: 'gradient', parse: 'number', range: { min: 1.0, max: 18.0 } },
+                'Future Criminal Risk Score': { mode: 'gradient', parse: 'percent', range: { min: 2, max: 99 } },
+                'Parasocial Investment (7d)': { mode: 'gradient', parse: 'hm', range: { min: 0, max: 1139 } },
+                'Hot Take Temperature': { mode: 'gradient', parse: 'number', range: { min: 34, max: 109 } },
+                'Average Smile Duration': { mode: 'gradient', parse: 'number', range: { min: 2, max: 33 } },
+                'Main Character Probability': { mode: 'gradient', parse: 'percent', range: { min: 6, max: 94 } },
+                'Ironic Detachment Level': { mode: 'gradient', parse: 'percent', range: { min: 38, max: 99 } },
+                'Subscription Load': { mode: 'gradient', parse: 'number', range: { min: 0.0, max: 12.0 } },
+                'Life Admin Backlog': { mode: 'gradient', parse: 'number', range: { min: 0, max: 120 } },
+                'Career Pivot Probability': { mode: 'gradient', parse: 'percent', range: { min: 8, max: 92 } },
+                'Distance from True Self': { mode: 'gradient', parse: 'number', range: { min: 24.0, max: 1800.0 } },
+                'Time to Next Existential Crisis': { mode: 'gradient', parse: 'dhr', range: { min: 0, max: 335 } },
+                'Existential Dread Level': { mode: 'gradient', parse: 'number', range: { min: 1, max: 10 } },
+                'Loss of Faith in Humanity': { mode: 'gradient', parse: 'percent', range: { min: 52, max: 99 } },
+                'Hunger Level': { mode: 'gradient', parse: 'percent', range: { min: 22, max: 99 } },
+                'Social Battery Remaining': { mode: 'gradient', parse: 'percent', range: { min: 0, max: 67 } },
+                'Fluorescent Light Exposure (7d)': { mode: 'gradient', parse: 'number', range: { min: 12, max: 140 } },
+                'Natural Sunlight Exposure (7d)': { mode: 'gradient', parse: 'number', range: { min: 0, max: 240 } },
+                'Time to next Real Weekend': { mode: 'gradient', parse: 'number', range: { min: 2, max: 40 } },
+                'Screen Time (past 24h)': { mode: 'gradient', parse: 'hm', range: { min: 120, max: 1019 } },
+                'Emotional Bandwidth Remaining': { mode: 'gradient', parse: 'percent', range: { min: 3, max: 78 } },
+                'Silence Tolerance': { mode: 'gradient', parse: 'number', range: { min: 3, max: 160 } },
+                'Social Comparison Rate': { mode: 'gradient', parse: 'number', range: { min: 0, max: 84 } },
+                'Self-Worth Tied to Output': { mode: 'gradient', parse: 'percent', range: { min: 35, max: 99 } },
+                'Rest Guilt Level': { mode: 'gradient', parse: 'number', range: { min: 1, max: 10 } },
+                'Boundary Enforcement Probability': { mode: 'gradient', parse: 'percent', range: { min: 0, max: 54 } },
+                'Dopamine Budget Remaining': { mode: 'gradient', parse: 'percent', range: { min: 0, max: 55 } },
+                'Purpose Clarity': { mode: 'gradient', parse: 'percent', range: { min: 0, max: 66 } },
+                'Executive Function Availability': { mode: 'gradient', parse: 'percent', range: { min: 4, max: 74 } },
+                'Working Memory Free Space': { mode: 'gradient', parse: 'percent', range: { min: 0, max: 42 } },
+                'Compliment Absorption Rate': { mode: 'gradient', parse: 'percent', range: { min: 0, max: 66 } },
+                'Criticism Retention Half-Life': { mode: 'gradient', parse: 'number', range: { min: 7, max: 240 } }
+            },
+            patterns: []
         };
         this.timing = {
             detectIntervalMs: 100,
@@ -664,6 +722,190 @@ class KioskApp {
         this.progressText.textContent = `${Math.floor(percentage)}%`;
     }
 
+    parseFaceLabelLine(line) {
+        if (!line) return { fullText: '', name: null, value: null, separator: '' };
+        const trimmed = String(line).trim();
+        const colonIndex = trimmed.lastIndexOf(':');
+        if (colonIndex !== -1) {
+            return {
+                fullText: trimmed,
+                name: trimmed.slice(0, colonIndex).trim(),
+                value: trimmed.slice(colonIndex + 1).trim(),
+                separator: ': '
+            };
+        }
+        const prefixes = ['Confidence', 'Age', 'Gender', 'Emotion'];
+        for (const prefix of prefixes) {
+            if (trimmed.startsWith(`${prefix} `)) {
+                return {
+                    fullText: trimmed,
+                    name: prefix,
+                    value: trimmed.slice(prefix.length + 1).trim(),
+                    separator: ' '
+                };
+            }
+        }
+        return { fullText: trimmed, name: null, value: null, separator: '' };
+    }
+
+    normalizeLabelKey(labelName) {
+        if (!labelName) return '';
+        return String(labelName).replace(/[\u2010-\u2015\u2212]/g, '-').trim();
+    }
+
+    getLabelColorRule(labelName) {
+        if (!labelName) return null;
+        const normalized = this.normalizeLabelKey(labelName);
+        const exact = this.labelColorRules?.exact?.[normalized] || this.labelColorRules?.exact?.[labelName];
+        if (exact) return exact;
+        const patterns = this.labelColorRules?.patterns || [];
+        for (const rule of patterns) {
+            if (rule?.match?.test && rule.match.test(normalized)) {
+                return rule;
+            }
+        }
+        return null;
+    }
+
+    extractNumericValue(valueText, parseMode = 'auto') {
+        if (!valueText) return null;
+        const value = String(valueText).trim();
+
+        const parsePercent = () => {
+            const percentMatch = value.match(/(\d+(\.\d+)?)\s*%/);
+            if (percentMatch) return parseFloat(percentMatch[1]);
+            const slash100Match = value.match(/(\d+(\.\d+)?)\s*\/\s*100/);
+            if (slash100Match) return parseFloat(slash100Match[1]);
+            return null;
+        };
+
+        const parseRatio = () => {
+            const numberMatch = value.match(/-?\d+(\.\d+)?/);
+            if (!numberMatch) return null;
+            const number = parseFloat(numberMatch[0]);
+            if (number < 0 || number > 1) return null;
+            return number;
+        };
+
+        const parseNumber = () => {
+            const numberMatch = value.match(/-?\d+(\.\d+)?/);
+            return numberMatch ? parseFloat(numberMatch[0]) : null;
+        };
+
+        const parseHm = () => {
+            const hoursMatch = value.match(/(\d+)\s*h/i);
+            const minutesMatch = value.match(/(\d+)\s*m/i);
+            if (!hoursMatch && !minutesMatch) return null;
+            const hours = hoursMatch ? parseInt(hoursMatch[1], 10) : 0;
+            const minutes = minutesMatch ? parseInt(minutesMatch[1], 10) : 0;
+            return (hours * 60) + minutes;
+        };
+
+        const parseDhr = () => {
+            const daysMatch = value.match(/(\d+)\s*d/i);
+            const hoursMatch = value.match(/(\d+)\s*hr/i);
+            if (!daysMatch && !hoursMatch) return null;
+            const days = daysMatch ? parseInt(daysMatch[1], 10) : 0;
+            const hours = hoursMatch ? parseInt(hoursMatch[1], 10) : 0;
+            return (days * 24) + hours;
+        };
+
+        if (parseMode === 'percent') return parsePercent();
+        if (parseMode === 'ratio') return parseRatio();
+        if (parseMode === 'number') return parseNumber();
+        if (parseMode === 'hm') return parseHm();
+        if (parseMode === 'dhr') return parseDhr();
+
+        const percent = parsePercent();
+        if (percent !== null) return percent;
+
+        const slash10Match = value.match(/(\d+(\.\d+)?)\s*\/\s*10/);
+        if (slash10Match) return parseFloat(slash10Match[1]);
+
+        const ratio = parseRatio();
+        if (ratio !== null) return ratio;
+
+        return parseNumber();
+    }
+
+    hexToRgb(hex) {
+        if (!hex || typeof hex !== 'string') return null;
+        const normalized = hex.replace('#', '').trim();
+        if (normalized.length !== 6) return null;
+        const r = parseInt(normalized.slice(0, 2), 16);
+        const g = parseInt(normalized.slice(2, 4), 16);
+        const b = parseInt(normalized.slice(4, 6), 16);
+        if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return null;
+        return { r, g, b };
+    }
+
+    rgbToHex({ r, g, b }) {
+        const toHex = (value) => value.toString(16).padStart(2, '0');
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+
+    lerpColor(a, b, t) {
+        const colorA = this.hexToRgb(a);
+        const colorB = this.hexToRgb(b);
+        if (!colorA || !colorB) return a || b || '#ffffff';
+        const clampT = Math.min(Math.max(t, 0), 1);
+        const r = Math.round(colorA.r + (colorB.r - colorA.r) * clampT);
+        const g = Math.round(colorA.g + (colorB.g - colorA.g) * clampT);
+        const bChannel = Math.round(colorA.b + (colorB.b - colorA.b) * clampT);
+        return this.rgbToHex({ r, g, b: bChannel });
+    }
+
+    getGradientColor(palette, ratio) {
+        if (!Array.isArray(palette) || palette.length === 0) return '#ffffff';
+        if (palette.length === 1) return palette[0];
+        const clamped = Math.min(Math.max(ratio, 0), 1);
+        const scaled = clamped * (palette.length - 1);
+        const index = Math.floor(scaled);
+        const t = scaled - index;
+        const start = palette[index];
+        const end = palette[Math.min(index + 1, palette.length - 1)];
+        return this.lerpColor(start, end, t);
+    }
+
+    getValueColor(labelName, valueText) {
+        const defaultColor = '#ffffff';
+        if (!valueText) return defaultColor;
+        const value = String(valueText);
+
+        if (/\b\d+(\.\d+)?x\b/i.test(value)) return defaultColor;
+        if (/\b\d+(\.\d+)?\s*hz\b/i.test(value)) return defaultColor;
+        if (/\b\d+(\.\d+)?\s*db\b/i.test(value)) return defaultColor;
+
+        const rule = this.getLabelColorRule(labelName);
+        if (!rule) return defaultColor;
+
+        const numericValue = this.extractNumericValue(value, rule.parse || 'auto');
+        if (numericValue === null || numericValue === undefined || Number.isNaN(numericValue)) {
+            return defaultColor;
+        }
+
+        if (rule.mode === 'bands') {
+            const bands = Array.isArray(rule.bands) ? rule.bands : [];
+            for (const band of bands) {
+                if (band.max === undefined || numericValue <= band.max) {
+                    return band.color || defaultColor;
+                }
+            }
+            return bands.length ? (bands[bands.length - 1].color || defaultColor) : defaultColor;
+        }
+
+        if (rule.mode === 'gradient') {
+            const range = rule.range || { min: 0, max: 1 };
+            const span = range.max - range.min;
+            if (!Number.isFinite(span) || span <= 0) return defaultColor;
+            const ratio = (numericValue - range.min) / span;
+            const palette = rule.palette || this.labelColorRules?.defaultPalette || [];
+            return this.getGradientColor(palette, ratio);
+        }
+
+        return defaultColor;
+    }
+
     drawFaceLabel(face) {
         if (!face || !face.box) return;
 
@@ -681,6 +923,17 @@ class KioskApp {
         }
         if (lines.length === 0) return;
 
+        const parsedLines = lines.map((line) => {
+            const parsed = this.parseFaceLabelLine(line);
+            if (parsed.name && parsed.value) {
+                return {
+                    ...parsed,
+                    valueColor: this.getValueColor(parsed.name, parsed.value)
+                };
+            }
+            return { ...parsed, valueColor: '#ffffff' };
+        });
+
         const fontSize = 21;
         const lineHeight = 26;
         const paddingX = 12;
@@ -690,9 +943,17 @@ class KioskApp {
         this.ctx.textBaseline = 'top';
 
         let maxWidth = 0;
-        for (const line of lines) {
-            const width = this.ctx.measureText(line).width;
-            if (width > maxWidth) maxWidth = width;
+        for (const line of parsedLines) {
+            if (line.name && line.value) {
+                const nameWidth = this.ctx.measureText(line.name).width;
+                const sepWidth = this.ctx.measureText(line.separator).width;
+                const valueWidth = this.ctx.measureText(line.value).width;
+                const width = nameWidth + sepWidth + valueWidth;
+                if (width > maxWidth) maxWidth = width;
+            } else {
+                const width = this.ctx.measureText(line.fullText).width;
+                if (width > maxWidth) maxWidth = width;
+            }
         }
 
         const boxWidth = maxWidth + paddingX * 2;
@@ -746,9 +1007,26 @@ class KioskApp {
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
         this.ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
-        this.ctx.fillStyle = '#00ff88';
-        for (let i = 0; i < lines.length; i++) {
-            this.ctx.fillText(lines[i], boxX + paddingX, boxY + paddingY + i * lineHeight);
+        const labelColor = '#ffffff';
+        for (let i = 0; i < parsedLines.length; i++) {
+            const line = parsedLines[i];
+            const textY = boxY + paddingY + i * lineHeight;
+            let textX = boxX + paddingX;
+            if (line.name && line.value) {
+                this.ctx.fillStyle = labelColor;
+                this.ctx.fillText(line.name, textX, textY);
+                textX += this.ctx.measureText(line.name).width;
+                if (line.separator) {
+                    this.ctx.fillStyle = labelColor;
+                    this.ctx.fillText(line.separator, textX, textY);
+                    textX += this.ctx.measureText(line.separator).width;
+                }
+                this.ctx.fillStyle = line.valueColor || labelColor;
+                this.ctx.fillText(line.value, textX, textY);
+            } else {
+                this.ctx.fillStyle = labelColor;
+                this.ctx.fillText(line.fullText, textX, textY);
+            }
         }
     }
 
