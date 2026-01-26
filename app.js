@@ -253,11 +253,14 @@ class KioskApp {
         const storageKey = 'kiosk:sidebar-hidden';
         try {
             const saved = localStorage.getItem(storageKey);
-            if (saved === '1') {
+            if (saved === '0') {
+                document.body.classList.remove('sidebar-hidden');
+            } else {
                 document.body.classList.add('sidebar-hidden');
             }
         } catch (error) {
             console.warn('layout preference read failed:', error);
+            document.body.classList.add('sidebar-hidden');
         }
         logoText.addEventListener('click', () => {
             document.body.classList.toggle('sidebar-hidden');
