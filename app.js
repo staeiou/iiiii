@@ -540,7 +540,7 @@ class KioskApp {
             } else if (this.lastFaceSeen) {
                 const timeSinceSeen = wallNow - this.lastFaceSeen;
                 console.log('Time since last detection:', timeSinceSeen);
-                if (timeSinceSeen > 10000) {  // 10 seconds without detection
+                if (timeSinceSeen > 5000) {  // 5 seconds without detection
                     console.log('Resetting detection due to timeout');
                     this.resetDetection();
                 }
