@@ -18,13 +18,19 @@ const bucket100 = (score) => {
 const LabelGenerator = {
     // Phase 0: "Obvious" inferences (front-loaded before the satirical escalation)
     phase0Labels: [
-        {
-            category: 'Exhaustion Level',
-            getValue: () => {
-                const score = randInt(12, 98);
-                return `${bucket100(score)} (${score}/100)`;
-            }
-        },
+        { category: 'Facial Recognition ID Match', getValue: () => `${randInt(90, 99)}%` },
+        { category: 'Social Media Profile Match', getValue: () => `${randInt(90, 99)}%` },
+        { category: 'LinkedIn Profile Authenticity', getValue: () => `${randInt(8, 54)}%` },
+        { category: 'Influence Quotient', getValue: () => `${randInt(8, 34)}th percentile` },
+        { category: 'Security Threat (property crimes)', getValue: () => `${randInt(38, 97)}%` },
+        { category: 'Security Threat (thought crimes)', getValue: () => `${randInt(38, 97)}%` }
+    ],
+
+    // Phase 1: Psychometric inference (confident, quantified, vague)
+    phase1Labels: [
+        { category: 'Culture Fit Score', getValue: () => `${randInt(2, 99)}%` },
+        { category: 'Work Ethic', getValue: () => `${randInt(38, 97)}%` },
+        { category: 'Identity Fragmentation', getValue: () => `${randFloat(3.0, 8.9, 1).toFixed(1)} distinct personas` },
         {
             category: 'Stress Level',
             getValue: () => {
@@ -39,11 +45,6 @@ const LabelGenerator = {
                 return `${bucket100(score)} (${score}/100)`;
             }
         },
-        { category: 'Personality: Openness', getValue: () => `${randInt(12, 98)}/100` },
-        { category: 'Personality: Conscientiousness', getValue: () => `${randInt(12, 98)}/100` },
-        { category: 'Personality: Extraversion', getValue: () => `${randInt(1, 30)}/100` },
-        { category: 'Personality: Agreeableness', getValue: () => `${randInt(12, 98)}/100` },
-        { category: 'Personality: Neuroticism', getValue: () => `${randInt(12, 98)}/100` },
         {
             category: 'Myers-Briggs Type Indicator',
             getValue: () => {
@@ -51,27 +52,16 @@ const LabelGenerator = {
                 return types[randInt(0, types.length - 1)];
             }
         }
-    ],
-
-    // Phase 1: Psychometric inference (confident, quantified, vague)
-    phase1Labels: [
-        { category: 'Vibe Fit Score', getValue: () => `${randInt(2, 99)}/100` },
-        { category: 'Aesthetic Consistency', getValue: () => `${randInt(35, 96)}%` },
-        { category: 'Smile Sincerity Probability', getValue: () => randFloat(0.04, 0.36, 2).toFixed(2) },
-        { category: 'Eye Contact Rate', getValue: () => `${randInt(38, 97)}%` },
-        { category: 'Identity Fragmentation', getValue: () => `${randFloat(3.0, 8.9, 1).toFixed(1)} distinct personas` }
 
     ],
 
     // Phase 2: Institutional/corporate valuation (human -> KPI)
     phase2Labels: [
-        { category: 'Sleep Debt', getValue: () => formatHm(randInt(0, 9), randInt(0, 59)) },
-        { category: 'Net Institutional Value', getValue: () => `$${randFloat(3.5, 38.0, 2).toFixed(2)}/day` },
+        { category: 'Sleep Debt', getValue: () => formatHm(randInt(9, 21), randInt(0, 59)) },
+        { category: 'Net Institutional Value', getValue: () => `$${randFloat(99, 999, 2).toFixed(2)}/day` },
         { category: 'Original Thought Suppression', getValue: () => `${randInt(72, 99)}%` },
-        { category: 'LinkedIn Profile Authenticity', getValue: () => `${randInt(8, 54)}%` },
         { category: 'Percent of Soul Sold', getValue: () => `${randInt(12, 99)}%` },
         { category: 'Unpaid Emotional Labor', getValue: () => `${randFloat(1.0, 18.0, 1).toFixed(1)} “no worries”/day` },
-        { category: 'Future Criminal Risk Score', getValue: () => `${randInt(2, 99)}%` }
     ],
 
     // Phase 3: Prestige society / quantified self / algorithmic vibe-reading
@@ -116,7 +106,7 @@ const LabelGenerator = {
         { category: 'Compliment Absorption Rate', getValue: () => `${randInt(0, 66)}%` },
         { category: 'Criticism Retention Half‑Life', getValue: () => `${randInt(7, 240)} days` },
         { category: 'Guilt Multiplier', getValue: () => `${randFloat(1.0, 6.2, 1).toFixed(1)}x` },
-        { category: 'Blood Type', getValue: () => ['Oh, No', 'Red'][randInt(0, 2)] }
+        { category: 'Blood Type', getValue: () => ['Oh, No', 'Red'][randInt(0, 1)] }
     ],
 
     // Get labels for a specific phase
