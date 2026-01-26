@@ -79,8 +79,8 @@ class KioskApp {
                 enabled: true,
                 detector: {
                     rotation: true,
-                    maxDetected: 3,
-                    minConfidence: 0.1,
+                    maxDetected: 2,
+                    minConfidence: 0.15,
                     skipFrames: 1,
                     skipTime: 120
                 },
