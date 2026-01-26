@@ -275,7 +275,7 @@ class KioskApp {
 
             const videoWidth = this.video.videoWidth || displayWidth;
             const videoHeight = this.video.videoHeight || displayHeight;
-            const scale = Math.max(displayWidth / videoWidth, displayHeight / videoHeight);
+            const scale = Math.min(displayWidth / videoWidth, displayHeight / videoHeight);
             const scaledWidth = videoWidth * scale;
             const scaledHeight = videoHeight * scale;
             const offsetX = (displayWidth - scaledWidth) / 2;
@@ -634,11 +634,12 @@ class KioskApp {
         }
         if (lines.length === 0) return;
 
-        const lineHeight = 18;
-        const paddingX = 8;
-        const paddingY = 6;
+        const fontSize = 21;
+        const lineHeight = 26;
+        const paddingX = 12;
+        const paddingY = 9;
 
-        this.ctx.font = '600 14px "Segoe UI", system-ui, -apple-system, sans-serif';
+        this.ctx.font = `600 ${fontSize}px "Segoe UI", system-ui, -apple-system, sans-serif`;
         this.ctx.textBaseline = 'top';
 
         let maxWidth = 0;
@@ -654,18 +655,22 @@ class KioskApp {
         const faceW = face.box[2];
         const faceH = face.box[3];
 
-        let boxX = faceX + faceW - boxWidth - 8;
-        let boxY = faceY + (faceH / 2) - (boxHeight / 2);
+        const margin = 8;
+        const videoWidth = this.video.videoWidth || (faceX + faceW);
+        const videoHeight = this.video.videoHeight || (faceY + faceH);
 
-        const minX = faceX + 4;
-        const minY = faceY + 4;
-        const maxX = faceX + faceW - boxWidth - 4;
-        const maxY = faceY + faceH - boxHeight - 4;
+        let boxX = faceX + faceW + margin;
+        let boxY = faceY;
 
-        if (boxX < minX) boxX = minX;
-        if (boxX > maxX) boxX = maxX;
-        if (boxY < minY) boxY = minY;
-        if (boxY > maxY) boxY = maxY;
+        if (boxX + boxWidth > videoWidth - margin) {
+            boxX = faceX - boxWidth - margin;
+        }
+
+        if (boxX < margin) boxX = margin;
+        if (boxX + boxWidth > videoWidth - margin) boxX = videoWidth - boxWidth - margin;
+
+        if (boxY < margin) boxY = margin;
+        if (boxY + boxHeight > videoHeight - margin) boxY = videoHeight - boxHeight - margin;
 
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         this.ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
