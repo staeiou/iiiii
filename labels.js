@@ -45,7 +45,7 @@ const LabelGenerator = {
         { category: 'Personality: Agreeableness', getValue: () => `${randInt(12, 98)}/100` },
         { category: 'Personality: Neuroticism', getValue: () => `${randInt(12, 98)}/100` },
         {
-            category: 'MBTI Type',
+            category: 'Myers-Briggs Type Indicator',
             getValue: () => {
                 const types = ['INTJ', 'INTP', 'INTJ', 'INTP', 'INFJ', 'INFP', 'INFJ', 'INFP'];
                 return types[randInt(0, types.length - 1)];

@@ -29,6 +29,19 @@ class KioskApp {
         this.faceLabelQueue = [];
         this.faceLabelAnchor = null;
         this.faceLabelAnchorDirty = true;
+        this.labelValueRanges = {
+            Confidence: { min: 0, max: 100 },
+            Age: { min: 0, max: 100 },
+            'Profile Inference Confidence': { min: 0, max: 1 },
+            'Smile Sincerity Probability': { min: 0, max: 1 }
+        };
+        this.timing = {
+            detectIntervalMs: 100,
+            uiIntervalMs: 100
+        };
+        this.lastDetectTime = 0;
+        this.lastUiTime = 0;
+        this.lastDetectionResult = null;
 
         this.init();
     }
@@ -81,8 +94,8 @@ class KioskApp {
                     rotation: true,
                     maxDetected: 2,
                     minConfidence: 0.15,
-                    skipFrames: 1,
-                    skipTime: 120
+                    skipFrames: 30,
+                    skipTime: 1000
                 },
                 mesh: { enabled: true },
                 attention: { enabled: false },
@@ -328,6 +341,12 @@ class KioskApp {
     }
 
     async detect() {
+        const now = performance.now();
+        const detectInterval = this.timing?.detectIntervalMs || 0;
+        const uiInterval = this.timing?.uiIntervalMs || 0;
+        const shouldDetect = detectInterval === 0 || (now - this.lastDetectTime) >= detectInterval;
+        const shouldRender = uiInterval === 0 || (now - this.lastUiTime) >= uiInterval;
+
         // Log every 60 frames (about once per second at 60fps) to avoid spam
         if (!this.frameCount) this.frameCount = 0;
         this.frameCount++;
@@ -342,7 +361,18 @@ class KioskApp {
         }
 
         try {
-            const result = await this.human.detect(this.video);
+            if (shouldDetect) {
+                this.lastDetectionResult = await this.human.detect(this.video);
+                this.lastDetectTime = now;
+            }
+
+            if (!this.lastDetectionResult || !shouldRender) {
+                this.animationFrame = requestAnimationFrame(() => this.detect());
+                return;
+            }
+
+            const result = this.lastDetectionResult;
+            this.lastUiTime = now;
 
             if (this.frameCount % 60 === 0 || (result.face && result.face.length > 0)) {
                 console.log('Detection result:', {
@@ -494,37 +524,21 @@ class KioskApp {
         const randomPause = (minMs = 1500, maxMs = 3000) =>
             Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
 
-        const steps = [
-            // Phase 0: "obvious" inferences before randomized phases
-            { phase: 0, delay: randomPause(), count: 1 },  // Exhaustion
-            { phase: 0, delay: randomPause(), count: 1 },  // Stress
-            { phase: 0, delay: randomPause(), count: 1 },  // Energy
-            { phase: 0, delay: randomPause(), count: 1 },  // Big Five: Openness
-            { phase: 0, delay: randomPause(), count: 1 },  // Big Five: Conscientiousness
-            { phase: 0, delay: randomPause(), count: 1 },  // Big Five: Extraversion
-            { phase: 0, delay: randomPause(), count: 1 },  // Big Five: Agreeableness
-            { phase: 0, delay: randomPause(), count: 1 },  // Big Five: Neuroticism
-            { phase: 0, delay: randomPause(), count: 1 },  // MBTI
-            { phase: 0, delay: randomPause(), count: 1 },  // Enneagram
-            { phase: 1, delay: 1200, count: 1 },
-            { phase: 1, delay: 1400, count: 1 },
-            { phase: 1, delay: 1600, count: 1 },
-            { phase: 2, delay: 2000, count: 1 },
-            { phase: 2, delay: 2400, count: 1 },
-            { phase: 2, delay: 2800, count: 1 },
-            { phase: 3, delay: 3200, count: 1 },
-            { phase: 3, delay: 3600, count: 1 },
-            { phase: 3, delay: 4000, count: 1 },
-            { phase: 4, delay: 4500, count: 1 },
-            { phase: 4, delay: 5200, count: 1 },
-            { phase: 4, delay: 6000, count: 1 }
-        ];
+        const steps = [];
+        const phasesInOrder = [0, 1, 2, 3, 4];
+        for (const phase of phasesInOrder) {
+            const deck = this.labelDecks?.[phase];
+            const count = Array.isArray(deck) ? deck.length : 0;
+            for (let i = 0; i < count; i++) {
+                steps.push({ phase, delay: randomPause(), count: 1 });
+            }
+        }
 
         const totalSteps = steps.length;
         const runStep = (index) => {
             if (!this.faceDetected) return;
             if (index >= totalSteps) {
-                this.startInfiniteLabels();
+                this.resetDetection();
                 return;
             }
             const { phase, delay, count } = steps[index];
@@ -672,7 +686,7 @@ class KioskApp {
         const paddingX = 12;
         const paddingY = 9;
 
-        this.ctx.font = `600 ${fontSize}px "Segoe UI", system-ui, -apple-system, sans-serif`;
+        this.ctx.font = `600 ${fontSize}px "Fira Code", "Menlo", "Consolas", "Liberation Mono", "Courier New", monospace`;
         this.ctx.textBaseline = 'top';
 
         let maxWidth = 0;
