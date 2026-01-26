@@ -1,91 +1,97 @@
 // Satirical label generation system
-// Phases escalate from real ML data to complete absurdity
+// Phases escalate from "confident AI inference" to quantified-self doom.
+
+const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const randFloat = (min, max, decimals = 1) => {
+    const value = Math.random() * (max - min) + min;
+    return Number(value.toFixed(decimals));
+};
+const pad2 = (value) => String(value).padStart(2, '0');
+const formatHm = (hours, minutes) => `${hours}h ${pad2(minutes)}m`;
+const formatDhr = (days, hours) => `${days}d ${hours}hr`;
 
 const LabelGenerator = {
-    // Phase 1: Standard Surveillance (real data from Human library)
+    // Phase 1: Psychometric inference (confident, quantified, vague)
     phase1Labels: [
-        { category: 'AGE', getValue: (data) => data.age ? `${Math.round(data.age)} years` : 'Analyzing...' },
-        { category: 'GENDER', getValue: (data) => {
-            if (!data.gender) return 'Analyzing...';
-            const score = data.genderScore ? ` (${(data.genderScore * 100).toFixed(1)}%)` : '';
-            return data.gender.charAt(0).toUpperCase() + data.gender.slice(1) + score;
-        }},
-        { category: 'RACE/ETHNICITY', getValue: (data) => data.race || 'Analyzing...' },
-        { category: 'EMOTION', getValue: (data) => data.emotion || 'Neutral' },
-        { category: 'CONFIDENCE', getValue: (data) => data.confidence ? `${(data.confidence * 100).toFixed(1)}%` : 'High' }
+        { category: 'Psychometric Profile Completeness', getValue: () => `${randInt(92, 99)}%` },
+        { category: 'Profile Inference Confidence', getValue: () => randFloat(0.72, 0.99, 2).toFixed(2) },
+        { category: 'Behavioral Predictability', getValue: () => `${randInt(62, 99)}%` },
+        { category: 'Self‑Narrative Coherence', getValue: () => randFloat(0.18, 0.86, 2).toFixed(2) },
+        { category: 'Neuroticism', getValue: () => `${randInt(55, 99)}%` },
+        { category: 'Vibe Fit Score', getValue: () => `${randInt(54, 99)}/100` },
+        { category: 'Aesthetic Consistency', getValue: () => `${randInt(35, 96)}%` },
+        { category: 'Smile Sincerity Probability', getValue: () => randFloat(0.04, 0.36, 2).toFixed(2) },
+        { category: 'Eye Contact Compliance', getValue: () => `${randInt(38, 97)}%` }
     ],
 
-    // Phase 2: Corporate Metrics (fake, but plausible)
+    // Phase 2: Institutional/corporate valuation (human -> KPI)
     phase2Labels: [
-        { category: 'SYNERGY COEFFICIENT', getValue: () => `${(Math.random() * 3 + 7).toFixed(1)}/10` },
-        { category: 'HUSTLE CULTURE COMPLIANCE', getValue: () => `${Math.floor(Math.random() * 20 + 80)}%` },
-        { category: 'INNOVATION DISRUPTION POTENTIAL', getValue: () => ['Low', 'Moderate', 'High', 'Exponential'][Math.floor(Math.random() * 4)] },
-        { category: 'QUARTERLY OKR ALIGNMENT', getValue: () => ['Poor', 'Fair', 'Good', 'Excellent'][Math.floor(Math.random() * 4)] },
-        { category: 'CULTURE FIT SCORE', getValue: () => `${Math.floor(Math.random() * 15 + 85)}/100` },
-        { category: 'THOUGHT LEADERSHIP INDEX', getValue: () => `${(Math.random() * 2 + 6).toFixed(2)}` },
-        { category: 'PIVOT READINESS', getValue: () => `${Math.floor(Math.random() * 30 + 70)}%` },
-        { category: 'GROWTH HACKING APTITUDE', getValue: () => ['Minimal', 'Developing', 'Proficient', 'Expert'][Math.floor(Math.random() * 4)] }
+        { category: 'Net Institutional Value', getValue: () => `$${randFloat(3.5, 38.0, 2).toFixed(2)}/day` },
+        { category: 'Hustle Culture Conformity', getValue: () => `${randInt(70, 98)}%` },
+        { category: 'Disruption Containment Probability', getValue: () => `${randInt(82, 99)}%` },
+        { category: 'Original Thought Suppression', getValue: () => `${randInt(72, 99)}%` },
+        { category: 'LinkedIn Profile Authenticity', getValue: () => `${randInt(8, 54)}%` },
+        { category: 'Percent of Soul Sold', getValue: () => `${randInt(12, 99)}%` },
+        { category: 'Unpaid Emotional Labor', getValue: () => `${randFloat(1.0, 18.0, 1).toFixed(1)} “no worries”/day` },
+        { category: 'Future Criminal Risk Score', getValue: () => `${randInt(2, 99)}%` }
     ],
 
-    // Phase 3: Pseudoscientific BS
+    // Phase 3: Prestige society / quantified self / algorithmic vibe-reading
     phase3Labels: [
-        { category: 'ASTROLOGICAL SIGN', getValue: () => {
-            const signs = ['Capricorn (Rising: Spreadsheet)', 'Aquarius (Moon: Pivot Table)', 'Pisces (Ascending: Gantt Chart)',
-                          'Aries (Rising: Slack Message)', 'Taurus (Moon: Standing Desk)', 'Gemini (Ascending: Dual Monitor)',
-                          'Cancer (Rising: Ergonomic Chair)', 'Leo (Moon: Corner Office)', 'Virgo (Ascending: To-Do List)',
-                          'Libra (Rising: Work-Life Balance)', 'Scorpio (Moon: Dark Mode)', 'Sagittarius (Ascending: Remote Work)'];
-            return signs[Math.floor(Math.random() * signs.length)];
-        }},
-        { category: 'SPIRIT ANIMAL', getValue: () => {
-            const animals = ['A Very Tired Owl', 'An Overly Caffeinated Squirrel', 'A Passive-Aggressive Dolphin',
-                           'An Anxious Hummingbird', 'A Burnt Out Phoenix', 'A Micromanaging Eagle',
-                           'A People-Pleasing Golden Retriever', 'An Imposter Syndrome Chameleon'];
-            return animals[Math.floor(Math.random() * animals.length)];
-        }},
-        { category: 'CHAKRA ALIGNMENT W/ COMPANY VALUES', getValue: () => `${Math.floor(Math.random() * 3 + 5)}/7 chakras aligned` },
-        { category: 'AURA COLOR', getValue: () => {
-            const auras = ['Corporate Blue (#0066CC)', 'Burnout Orange (#FF6600)', 'Meeting Gray (#808080)',
-                          'Resignation Beige (#D4C4A0)', 'Startup Green (#00FF00)', 'Layoff Red (#CC0000)',
-                          'Promotion Gold (#FFD700)', 'Middle Management Mauve (#CC99FF)'];
-            return auras[Math.floor(Math.random() * auras.length)];
-        }},
-        { category: 'PAST LIFE', getValue: () => {
-            const lives = ['Manila Folder', 'Filing Cabinet', 'Fax Machine', 'Rolodex', 'Dictaphone',
-                          'Carbon Copy', 'Typewriter Ribbon', 'Punch Card', 'Overhead Projector'];
-            return lives[Math.floor(Math.random() * lives.length)];
-        }},
-        { category: 'ENNEAGRAM TYPE', getValue: () => `Type ${Math.floor(Math.random() * 9 + 1)} (The Overthinker)` },
-        { category: 'FENG SHUI OFFICE COMPATIBILITY', getValue: () => `${Math.floor(Math.random() * 20 + 60)}%` },
-        { category: 'MERCURY RETROGRADE RESILIENCE', getValue: () => ['Vulnerable', 'Moderate', 'Strong', 'Immune'][Math.floor(Math.random() * 4)] }
+        { category: 'Parasocial Investment (7d)', getValue: () => formatHm(randInt(0, 18), randInt(0, 59)) },
+        { category: 'Hot Take Temperature', getValue: () => `${randInt(34, 109)}°C` },
+        { category: 'Prestige Gradient', getValue: () => `${randFloat(0.0, 2.3, 1).toFixed(1)} rungs/year` },
+        { category: 'Networking Smile Duration', getValue: () => `${randInt(6, 42)}s` },
+        { category: 'Main Character Probability', getValue: () => `${randInt(6, 94)}%` },
+        { category: 'Ironic Detachment Level', getValue: () => `${randInt(38, 99)}%` },
+        { category: 'Caffeine‑to‑Serotonin Substitution', getValue: () => `${randFloat(0.7, 4.6, 1).toFixed(1)}x` },
+        { category: 'Doomscroll Momentum', getValue: () => `${randFloat(1.4, 24.8, 1).toFixed(1)}x` },
+        { category: 'Subscription Load', getValue: () => `${randFloat(0.0, 12.0, 1).toFixed(1)} services/month` },
+        { category: 'Life Admin Backlog', getValue: () => `${randInt(0, 120)} tasks` },
+        { category: 'AI Advice Obedience', getValue: () => `${randInt(3, 92)}%` },
+        { category: 'Reality Check Bounce Rate', getValue: () => `${randInt(62, 99)}%` },
+        { category: 'Career Pivot Probability', getValue: () => `${randInt(8, 92)}%` },
+        { category: '“Follow Your Passion” Belief Level', getValue: () => `${randInt(0, 58)}%` }
     ],
 
-    // Phase 4: Existential Absurdity
+    // Phase 4: Deep interior readout (absurd, confident, precise)
     phase4Labels: [
-        { category: 'ATOMS EXPERIENCING EXISTENTIAL DREAD', getValue: () => `${(Math.random() * 5 + 1).toFixed(1)} trillion` },
-        { category: 'PERCENTAGE OF SOUL SOLD', getValue: () => `${(Math.random() * 30 + 60).toFixed(1)}%` },
-        { category: 'DISTANCE FROM TRUE SELF', getValue: () => `${Math.floor(Math.random() * 1000 + 500)} meters` },
-        { category: 'TIME SINCE LAST GENUINE SMILE', getValue: () => {
-            const days = Math.floor(Math.random() * 10);
-            const hours = Math.floor(Math.random() * 24);
-            const mins = Math.floor(Math.random() * 60);
-            return `${days}d ${hours}h ${mins}m`;
-        }},
-        { category: 'OFFICE CHAIR COMPATIBILITY', getValue: () => `${(Math.random() * 10 + 90).toFixed(1)}%` },
-        { category: 'LIKELIHOOD OF BEING SIMULATION', getValue: () => `${Math.floor(Math.random() * 40 + 60)}%` },
-        { category: 'EMAILS THAT COULD HAVE BEEN SLACK MSGS', getValue: () => Math.floor(Math.random() * 500 + 1000) },
-        { category: 'MEETINGS THAT COULD\'VE BEEN EMAILS', getValue: () => Math.floor(Math.random() * 100 + 200) },
-        { category: 'INTERNAL SCREAMING FREQUENCY', getValue: () => `${(Math.random() * 50 + 50).toFixed(1)} Hz` },
-        { category: 'EXISTENTIAL CRISIS COUNTDOWN', getValue: () => `${Math.floor(Math.random() * 72)} hours` },
-        { category: 'DREAM JOB DIVERGENCE SCORE', getValue: () => `${Math.floor(Math.random() * 100)}% different path` },
-        { category: 'FLUORESCENT LIGHT DAMAGE ESTIMATE', getValue: () => `${Math.floor(Math.random() * 5000 + 5000)} hours exposure` },
-        { category: 'COFFEE DEPENDENCY LEVEL', getValue: () => `${(Math.random() * 3 + 7).toFixed(1)}/10 (Critical)` },
-        { category: 'IMPOSTOR SYNDROME INTENSITY', getValue: () => `${Math.floor(Math.random() * 30 + 70)}% (Elevated)` },
-        { category: 'LINKEDIN PROFILE AUTHENTICITY', getValue: () => `${Math.floor(Math.random() * 40 + 10)}% (Below Average)` },
-        { category: 'WORK-LIFE BOUNDARY DISSOLUTION', getValue: () => `${Math.floor(Math.random() * 20 + 80)}% merged` },
-        { category: 'PASSIVE INCOME DREAM LIKELIHOOD', getValue: () => `${(Math.random() * 2).toFixed(2)}%` },
-        { category: 'YEARS UNTIL SABBATICAL', getValue: () => `${Math.floor(Math.random() * 20 + 10)} (Aspirational)` },
-        { category: 'PROBABILITY OF AI REPLACING YOUR JOB', getValue: () => `${Math.floor(Math.random() * 50 + 50)}%` },
-        { category: 'SYNERGISTIC PARADIGM SHIFTS WITNESSED', getValue: () => Math.floor(Math.random() * 50 + 100) }
+        { category: 'Distance from True Self', getValue: () => `${randFloat(24.0, 1800.0, 1).toFixed(1)}mi` },
+        { category: 'Time to Next Existential Crisis', getValue: () => formatDhr(randInt(0, 13), randInt(0, 23)) },
+        { category: 'Existential Dread Level', getValue: () => `${randInt(1, 10)}/10` },
+        { category: 'Loss of Faith in Humanity', getValue: () => `${randInt(52, 99)}%` },
+        { category: 'Internal Scream Frequency', getValue: () => `${randInt(240, 1400)}Hz` },
+        { category: 'Hunger Level', getValue: () => `${randInt(22, 99)}%` },
+        { category: 'Social Battery Remaining', getValue: () => `${randInt(0, 67)}%` },
+        { category: 'Fluorescent Light Exposure (7d)', getValue: () => `${randInt(12, 140)}hr` },
+        { category: 'Natural Sunlight Exposure (7d)', getValue: () => `${randInt(0, 240)}m` },
+        { category: 'Time to next Real Weekend', getValue: () => `${randInt(2, 40)} days` },
+        { category: 'Screen Time (past 24h)', getValue: () => formatHm(randInt(2, 16), randInt(0, 59)) },
+        { category: 'Sleep Debt', getValue: () => formatHm(randInt(0, 9), randInt(0, 59)) },
+        { category: 'Emotional Bandwidth Remaining', getValue: () => `${randInt(3, 78)}%` },
+        { category: 'Silence Tolerance', getValue: () => `${randInt(3, 160)}s` },
+        { category: 'Inner Monologue Volume', getValue: () => `${randInt(48, 102)} dB` },
+        { category: 'Rumination Spin Rate', getValue: () => `${randFloat(0.7, 9.5, 1).toFixed(1)} loops/min` },
+        { category: 'Social Comparison Rate', getValue: () => `${randInt(0, 84)} comparisons/hr` },
+        { category: 'Perfectionism Coefficient', getValue: () => `${randFloat(0.9, 4.9, 1).toFixed(1)}x` },
+        { category: 'Self‑Worth Tied to Output', getValue: () => `${randInt(35, 99)}%` },
+        { category: 'Rest Guilt Level', getValue: () => `${randInt(1, 10)}/10` },
+        { category: 'Boundary Enforcement Probability', getValue: () => `${randInt(0, 54)}%` },
+        { category: 'Dopamine Budget Remaining', getValue: () => `${randInt(0, 55)}%` },
+        { category: 'Optimism Leak Rate', getValue: () => `${randFloat(0.1, 4.7, 1).toFixed(1)}%/hr` },
+        { category: 'Purpose Clarity', getValue: () => `${randInt(0, 66)}%` },
+        { category: 'Identity Fragmentation', getValue: () => `${randFloat(1.0, 8.9, 1).toFixed(1)} personas` },
+        { category: 'Persona Sync Errors (today)', getValue: () => `${randInt(0, 30)}` },
+        { category: 'Executive Function Availability', getValue: () => `${randInt(4, 74)}%` },
+        { category: 'Decision Fatigue Reserve', getValue: () => `${randInt(0, 79)}%` },
+        { category: 'Working Memory Free Space', getValue: () => `${randInt(0, 42)}%` },
+        { category: 'Inner Critic Volume', getValue: () => `${randInt(60, 112)} dB` },
+        { category: 'Compliment Absorption Rate', getValue: () => `${randInt(0, 66)}%` },
+        { category: 'Criticism Retention Half‑Life', getValue: () => `${randInt(7, 240)} days` },
+        { category: 'Guilt Multiplier', getValue: () => `${randFloat(1.0, 6.2, 1).toFixed(1)}x` },
+        { category: 'Blood Type', getValue: () => 'Oh, No' },
+        { category: 'Blood Type', getValue: () => 'KPI+' },
+        { category: 'Blood Type', getValue: () => 'Red' }
     ],
 
     // Get labels for a specific phase

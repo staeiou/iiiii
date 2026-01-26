@@ -479,8 +479,10 @@ class KioskApp {
     startInfiniteLabels() {
         this.labelInterval = setInterval(() => {
             if (!this.faceDetected) return;
-            this.addLabels(4, 1);
-            const currentProgress = parseFloat(this.progressFill.style.width) || 0;
+            const roll = Math.random();
+            const phase = roll < 0.05 ? 1 : roll < 0.20 ? 2 : roll < 0.45 ? 3 : 4;
+            this.addLabels(phase, 1);
+            const currentProgress = this.progressFill ? (parseFloat(this.progressFill.style.width) || 0) : 0;
             const newProgress = Math.min(currentProgress + 0.3, 99);
             this.updateProgress(newProgress);
         }, 6500);
