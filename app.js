@@ -26,6 +26,7 @@ class KioskApp {
         this.overlayTransform = { scale: 1, offsetX: 0, offsetY: 0 };
         this.labelTimeouts = [];
         this.labelDecks = {};
+        this.faceLabelQueue = [];
 
         this.init();
     }
@@ -45,6 +46,10 @@ class KioskApp {
             // Keep overlay aligned with responsive layout
             this.setupResizeHandling();
             console.log('✓ setupResizeHandling complete');
+
+            // Setup UI toggle for labels panel
+            this.setupLayoutToggle();
+            console.log('✓ setupLayoutToggle complete');
 
             // Hide loading
             console.log('Hiding loading screen...');
@@ -230,6 +235,17 @@ class KioskApp {
         } catch (error) {
             console.error('❌ setupResizeHandling failed:', error);
         }
+    }
+
+    setupLayoutToggle() {
+        const logoText = document.querySelector('.logo-text');
+        if (!logoText) return;
+        logoText.setAttribute('title', 'Tap to toggle labels panel');
+        logoText.setAttribute('role', 'button');
+        logoText.addEventListener('click', () => {
+            document.body.classList.toggle('sidebar-hidden');
+            setTimeout(() => this.updateOverlayTransform(), 50);
+        });
     }
 
     updateOverlayTransform() {
@@ -439,10 +455,25 @@ class KioskApp {
         this.clearLabelTimers();
         this.labels = [];
         this.labelsContainer.innerHTML = '';
+        this.faceLabelQueue = [];
         this.updateProgress(0);
         this.resetLabelDecks();
 
+        const randomPause = (minMs = 1500, maxMs = 3000) =>
+            Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+
         const steps = [
+            // Phase 0: "obvious" inferences before randomized phases
+            { phase: 0, delay: randomPause(), count: 1 },  // Exhaustion
+            { phase: 0, delay: randomPause(), count: 1 },  // Stress
+            { phase: 0, delay: randomPause(), count: 1 },  // Energy
+            { phase: 0, delay: randomPause(), count: 1 },  // Big Five: Openness
+            { phase: 0, delay: randomPause(), count: 1 },  // Big Five: Conscientiousness
+            { phase: 0, delay: randomPause(), count: 1 },  // Big Five: Extraversion
+            { phase: 0, delay: randomPause(), count: 1 },  // Big Five: Agreeableness
+            { phase: 0, delay: randomPause(), count: 1 },  // Big Five: Neuroticism
+            { phase: 0, delay: randomPause(), count: 1 },  // MBTI
+            { phase: 0, delay: randomPause(), count: 1 },  // Enneagram
             { phase: 1, delay: 1200, count: 1 },
             { phase: 1, delay: 1400, count: 1 },
             { phase: 1, delay: 1600, count: 1 },
@@ -480,15 +511,16 @@ class KioskApp {
 
     resetLabelDecks() {
         this.labelDecks = {};
-        for (let phase = 1; phase <= 4; phase++) {
-            this.labelDecks[phase] = this.buildShuffledLabelDeck(phase);
+        for (let phase = 0; phase <= 4; phase++) {
+            this.labelDecks[phase] = this.buildLabelDeck(phase);
         }
     }
 
-    buildShuffledLabelDeck(phase) {
+    buildLabelDeck(phase) {
         const key = `phase${phase}Labels`;
         const defs = (typeof LabelGenerator !== 'undefined' && Array.isArray(LabelGenerator[key])) ? LabelGenerator[key] : [];
         const deck = [...defs];
+        if (phase === 0) return deck.reverse();
         for (let i = deck.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -562,12 +594,21 @@ class KioskApp {
                 <div class="label-value">${label.value}</div>
             `;
             this.labelsContainer.appendChild(labelEl);
+            this.enqueueFaceLabel(`${label.category}: ${label.value}`);
 
             // Scroll to bottom
             this.labelsContainer.scrollTop = this.labelsContainer.scrollHeight;
         });
 
         this.labels.push(...newLabels);
+    }
+
+    enqueueFaceLabel(line) {
+        if (!line) return;
+        this.faceLabelQueue.push(line);
+        while (this.faceLabelQueue.length > 10) {
+            this.faceLabelQueue.shift();
+        }
     }
 
     updateProgress(percentage) {
@@ -588,6 +629,9 @@ class KioskApp {
         }
         const topEmotion = this.getTopEmotion(face.emotion);
         if (topEmotion) lines.push(`Emotion ${topEmotion}`);
+        if (this.faceLabelQueue.length) {
+            lines.push(...this.faceLabelQueue);
+        }
         if (lines.length === 0) return;
 
         const lineHeight = 18;
@@ -611,7 +655,7 @@ class KioskApp {
         const faceH = face.box[3];
 
         let boxX = faceX + faceW - boxWidth - 8;
-        let boxY = faceY + 8;
+        let boxY = faceY + (faceH / 2) - (boxHeight / 2);
 
         const minX = faceX + 4;
         const minY = faceY + 4;
@@ -640,6 +684,7 @@ class KioskApp {
         this.lastFaceSeen = null;
         this.detectionStartTime = null;
         this.labels = [];
+        this.faceLabelQueue = [];
         this.labelsContainer.innerHTML = '';
         this.updateProgress(0);
         this.instructions.classList.remove('hidden');

@@ -54,6 +54,8 @@ body {
     letter-spacing: 0.15em;
     color: #00ff88;
     text-transform: uppercase;
+    cursor: pointer;
+    user-select: none;
 }
 
 .status-bar {
@@ -206,6 +208,23 @@ body {
     flex-direction: column;
     overflow: hidden;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Camera-only mode */
+body.sidebar-hidden .analysis-panel {
+    display: none;
+}
+
+body.sidebar-hidden .main-container {
+    padding: 0;
+    gap: 0;
+}
+
+body.sidebar-hidden .video-container {
+    flex: 1 1 auto;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
 }
 
 .panel-header {

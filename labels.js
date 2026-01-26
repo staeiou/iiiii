@@ -9,15 +9,73 @@ const randFloat = (min, max, decimals = 1) => {
 const pad2 = (value) => String(value).padStart(2, '0');
 const formatHm = (hours, minutes) => `${hours}h ${pad2(minutes)}m`;
 const formatDhr = (days, hours) => `${days}d ${hours}hr`;
+const bucket100 = (score) => {
+    if (score >= 75) return 'High';
+    if (score >= 45) return 'Moderate';
+    return 'Low';
+};
 
 const LabelGenerator = {
+    // Phase 0: "Obvious" inferences (front-loaded before the satirical escalation)
+    phase0Labels: [
+        {
+            category: 'Exhaustion Level',
+            getValue: () => {
+                const score = randInt(12, 98);
+                return `${bucket100(score)} (${score}/100)`;
+            }
+        },
+        {
+            category: 'Stress Level',
+            getValue: () => {
+                const score = randInt(8, 99);
+                return `${bucket100(score)} (${score}/100)`;
+            }
+        },
+        {
+            category: 'Energy Level',
+            getValue: () => {
+                const score = randInt(6, 97);
+                return `${bucket100(score)} (${score}/100)`;
+            }
+        },
+        { category: 'Personality: Openness', getValue: () => `${randInt(12, 98)}/100` },
+        { category: 'Personality: Conscientiousness', getValue: () => `${randInt(12, 98)}/100` },
+        { category: 'Personality: Extraversion', getValue: () => `${randInt(12, 98)}/100` },
+        { category: 'Personality: Agreeableness', getValue: () => `${randInt(12, 98)}/100` },
+        { category: 'Personality: Neuroticism', getValue: () => `${randInt(12, 98)}/100` },
+        {
+            category: 'MBTI Type',
+            getValue: () => {
+                const types = ['INTJ', 'INTP', 'ENTJ', 'ENTP', 'INFJ', 'INFP', 'ENFJ', 'ENFP'];
+                return types[randInt(0, types.length - 1)];
+            }
+        },
+        {
+            category: 'Enneagram',
+            getValue: () => {
+                const types = [
+                    'Type 1 (Reformer)',
+                    'Type 2 (Helper)',
+                    'Type 3 (Achiever)',
+                    'Type 4 (Individualist)',
+                    'Type 5 (Investigator)',
+                    'Type 6 (Loyalist)',
+                    'Type 7 (Enthusiast)',
+                    'Type 8 (Challenger)',
+                    'Type 9 (Peacemaker)'
+                ];
+                return types[randInt(0, types.length - 1)];
+            }
+        }
+    ],
+
     // Phase 1: Psychometric inference (confident, quantified, vague)
     phase1Labels: [
         { category: 'Psychometric Profile Completeness', getValue: () => `${randInt(92, 99)}%` },
         { category: 'Profile Inference Confidence', getValue: () => randFloat(0.72, 0.99, 2).toFixed(2) },
         { category: 'Behavioral Predictability', getValue: () => `${randInt(62, 99)}%` },
         { category: 'Self‑Narrative Coherence', getValue: () => randFloat(0.18, 0.86, 2).toFixed(2) },
-        { category: 'Neuroticism', getValue: () => `${randInt(55, 99)}%` },
         { category: 'Vibe Fit Score', getValue: () => `${randInt(54, 99)}/100` },
         { category: 'Aesthetic Consistency', getValue: () => `${randInt(35, 96)}%` },
         { category: 'Smile Sincerity Probability', getValue: () => randFloat(0.04, 0.36, 2).toFixed(2) },
