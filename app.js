@@ -106,41 +106,31 @@ class KioskApp {
     async initCamera() {
         try {
             console.log('Requesting camera access...');
-            // iPad selfie cameras often default to a 16:9 crop (which feels "zoomed"),
-            // and our portrait layout then crops the sides even further. Prefer 4:3 to
-            // keep a wider field-of-view and let the UI crop vertically.
+            const supported = navigator.mediaDevices?.getSupportedConstraints?.() || {};
+            console.log('Camera supported constraints:', supported);
+
+            const baseVideo = {
+                facingMode: { ideal: 'user' },
+                width: { min: 640, ideal: 1280, max: 1920 },
+                height: { min: 480, ideal: 960, max: 1440 }
+            };
+
+            const withAspect = supported.aspectRatio
+                ? { ...baseVideo, aspectRatio: { ideal: 4 / 3 } }
+                : baseVideo;
+
             const cameraAttempts = [
                 {
-                    name: '4:3 (exact)',
-                    video: {
-                        facingMode: { ideal: 'user' },
-                        aspectRatio: { exact: 4 / 3 },
-                        width: { ideal: 1280 },
-                        height: { ideal: 960 }
-                    }
+                    name: '4:3 (ideal, ranged)',
+                    video: withAspect
                 },
                 {
-                    name: '4:3 (ideal)',
-                    video: {
-                        facingMode: { ideal: 'user' },
-                        aspectRatio: { ideal: 4 / 3 },
-                        width: { ideal: 1280 },
-                        height: { ideal: 960 }
-                    }
-                },
-                {
-                    name: '16:9 (fallback)',
-                    video: {
-                        facingMode: { ideal: 'user' },
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }
+                    name: 'ranged (no aspect)',
+                    video: baseVideo
                 },
                 {
                     name: 'facingMode only (fallback)',
-                    video: {
-                        facingMode: { ideal: 'user' }
-                    }
+                    video: { facingMode: { ideal: 'user' } }
                 }
             ];
 
@@ -168,6 +158,22 @@ class KioskApp {
 
             this.video.srcObject = stream;
             console.log('✓ Camera stream obtained');
+
+            const videoTrack = stream.getVideoTracks?.()[0];
+            if (videoTrack) {
+                if (supported.aspectRatio && typeof videoTrack.applyConstraints === 'function') {
+                    try {
+                        await videoTrack.applyConstraints({ aspectRatio: 4 / 3 });
+                        console.log('✓ Applied aspectRatio constraint (4:3)');
+                    } catch (constraintError) {
+                        console.warn('⚠ applyConstraints(aspectRatio) failed:', constraintError?.message || constraintError);
+                    }
+                }
+                const settings = videoTrack.getSettings?.();
+                if (settings) {
+                    console.log('Camera track settings:', settings);
+                }
+            }
 
             // Wait for video metadata - check if already loaded first
             if (this.video.readyState >= 1) {
