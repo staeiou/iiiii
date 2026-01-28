@@ -34,6 +34,15 @@ class KioskApp {
         this.faceLabelQueue = [];
         this.faceLabelAnchor = null;
         this.faceLabelAnchorDirty = true;
+        this.faceLabelLayout = null;
+        this.faceLabelMaxLines = 14;
+        this.faceLabelQueueMax = 10;
+        this.faceLabelBaseLayout = {
+            fontSize: 21,
+            lineHeight: 26,
+            paddingX: 12,
+            paddingY: 9
+        };
         this.lastFaceRender = null;
         const defaultPalette = ['#4f75ff', '#33d1cc', '#f4d35e'];
         const personalityPalette = ['#f4d35e'];
@@ -106,21 +115,37 @@ class KioskApp {
         this.lastDetectTime = 0;
         this.lastUiTime = 0;
         this.lastDetectionResult = null;
+        this.timingMarks = {};
+        this.timingLogBase = null;
+        this.detectionLoopStarted = false;
+        this.firstFaceLogged = false;
 
         this.init();
     }
 
+    markTime(label) {
+        const now = performance.now();
+        if (!this.timingLogBase) this.timingLogBase = now;
+        this.timingMarks[label] = now;
+        const delta = Math.round(now - this.timingLogBase);
+        console.log(`[Timing] ${label}: +${delta}ms`);
+        return now;
+    }
+
     async init() {
         try {
+            this.markTime('initStart');
             console.log('🚀 Starting initialization...');
 
             // Initialize Human library
             await this.initHuman();
             console.log('✓ initHuman complete');
+            this.markTime('initHumanComplete');
 
             // Request camera access
             await this.initCamera();
             console.log('✓ initCamera complete');
+            this.markTime('initCameraComplete');
 
             // Keep overlay aligned with responsive layout
             this.setupResizeHandling();
@@ -130,14 +155,19 @@ class KioskApp {
             this.setupLayoutToggle();
             console.log('✓ setupLayoutToggle complete');
 
+            // Prewarm Human to reduce first-detect latency
+            await this.prewarmHuman();
+
             // Hide loading
             console.log('Hiding loading screen...');
             this.loading.style.display = 'none';
             console.log('✓ Loading screen hidden');
+            this.markTime('loadingHidden');
 
             // Start detection loop
             console.log('Starting detection loop...');
             this.detect();
+            this.markTime('detectLoopStart');
             console.log('✓ Initialization complete!');
         } catch (error) {
             console.error('❌ Initialization error:', error);
@@ -150,28 +180,47 @@ class KioskApp {
         console.log('Initializing Human library...');
         const config = {
             backend: 'webgl',
-            modelBasePath: 'https://vladmandic.github.io/human-models/models/',
+            modelBasePath: './vendor/human-models/models/',
+            wasmPath: './vendor/tfjs-backend-wasm/',
+            cacheModels: false,
+            cacheSensitivity: 0.7,
             filter: { enabled: false },
             face: {
                 enabled: true,
                 detector: {
                     rotation: true,
                     maxDetected: 2,
-                    minConfidence: 0.15,
-                    skipFrames: 30,
-                    skipTime: 1000
+                    minConfidence: 0.2,
+                    skipFrames: 15,
+                    skipTime: 500
                 },
                 mesh: { enabled: true },
                 attention: { enabled: false },
-                iris: { enabled: true },
+                iris: { enabled: false },
                 description: { enabled: true },  // This provides age, gender, race
                 emotion: { enabled: true },
                 antispoof: { enabled: false },
                 liveness: { enabled: false }
             },
-            body: { enabled: false },
+            body: {
+                enabled: true,
+                modelPath: 'movenet-lightning.json',
+                maxDetected: 1,
+                minConfidence: 0.3,
+                skipFrames: 60,
+                skipTime: 1000
+            },
             hand: { enabled: false },
-            gesture: { enabled: false }
+            gesture: { enabled: false },
+            object: {
+                enabled: true,
+                modelPath: 'centernet.json',
+                minConfidence: 0.2,
+                iouThreshold: 0.4,
+                maxDetected: 10,
+                skipFrames: 0,
+                skipTime: 0
+            }
         };
 
         this.human = new Human.default(config);
@@ -179,7 +228,31 @@ class KioskApp {
         await this.human.load();
         console.log('✓ Human library loaded with backend:', this.human.backend);
         console.log('✓ Human config:', this.human.config);
+        console.log('✓ Human models loaded:', this.human.models.loaded());
+        console.log('✓ Human models list:', this.human.models.list());
         console.log('✓ Models loaded');
+    }
+
+    async prewarmHuman() {
+        if (!this.human || !this.video) return;
+        this.markTime('prewarmStart');
+
+        const waitForVideoFrame = async () => {
+            if (this.video.readyState >= 2) return;
+            await new Promise((resolve) => {
+                const onData = () => resolve();
+                this.video.addEventListener('loadeddata', onData, { once: true });
+                setTimeout(resolve, 2000);
+            });
+        };
+
+        try {
+            await waitForVideoFrame();
+            await this.human.detect(this.video);
+            this.markTime('prewarmDone');
+        } catch (error) {
+            console.warn('prewarmHuman failed:', error);
+        }
     }
 
     async initCamera() {
@@ -377,14 +450,14 @@ class KioskApp {
             this.canvas.style.width = `${displayWidth}px`;
             this.canvas.style.height = `${displayHeight}px`;
 
-            const videoWidth = this.video.videoWidth || displayWidth;
-            const videoHeight = this.video.videoHeight || displayHeight;
+            const sourceWidth = this.detectionSize?.width || this.video.videoWidth || displayWidth;
+            const sourceHeight = this.detectionSize?.height || this.video.videoHeight || displayHeight;
             const useContain = document.body.classList.contains('sidebar-hidden');
             const scale = useContain
-                ? Math.min(displayWidth / videoWidth, displayHeight / videoHeight)
-                : Math.max(displayWidth / videoWidth, displayHeight / videoHeight);
-            const scaledWidth = videoWidth * scale;
-            const scaledHeight = videoHeight * scale;
+                ? Math.min(displayWidth / sourceWidth, displayHeight / sourceHeight)
+                : Math.max(displayWidth / sourceWidth, displayHeight / sourceHeight);
+            const scaledWidth = sourceWidth * scale;
+            const scaledHeight = sourceHeight * scale;
             const offsetX = (displayWidth - scaledWidth) / 2;
             const offsetY = (displayHeight - scaledHeight) / 2;
 
@@ -396,7 +469,7 @@ class KioskApp {
 
             console.log('Overlay transform updated:', {
                 canvasSize: `${this.canvas.width}x${this.canvas.height}`,
-                videoSize: `${videoWidth}x${videoHeight}`,
+                videoSize: `${sourceWidth}x${sourceHeight}`,
                 scale: this.overlayTransform.scale
             });
         } catch (error) {
@@ -419,12 +492,16 @@ class KioskApp {
             console.log(`[Frame ${this.frameCount}] detect() running, video ready:`, this.video.readyState === 4);
         }
 
-        if (!this.human || this.video.readyState !== 4) {
+        if (!this.human || this.video.readyState < 2) {
             this.animationFrame = requestAnimationFrame(() => this.detect());
             return;
         }
 
         try {
+            if (!this.detectionLoopStarted) {
+                this.detectionLoopStarted = true;
+                this.markTime('detectLoopActive');
+            }
             if (shouldDetect) {
                 this.lastDetectionResult = await this.human.detect(this.video);
                 this.lastDetectTime = now;
@@ -436,14 +513,32 @@ class KioskApp {
             }
 
             const result = this.lastDetectionResult;
+            const objectDetections = Array.isArray(result.object)
+                ? result.object.filter((det) => det.label !== 'person')
+                : [];
             this.lastUiTime = now;
+            if (result?.width && result?.height) {
+                this.detectionSize = { width: result.width, height: result.height };
+            }
 
             if (this.frameCount % 60 === 0 || (result.face && result.face.length > 0)) {
                 console.log('Detection result:', {
                     faceCount: result.face?.length || 0,
+                    objectCount: objectDetections.length,
                     faceDetected: this.faceDetected,
                     canvasVisible: this.canvas.style.display !== 'none',
                     timestamp: Date.now()
+                });
+            }
+            if (this.frameCount % 60 === 0 && objectDetections.length > 0) {
+                const sample = objectDetections[0];
+                console.log('Object sample:', {
+                    label: sample.label,
+                    score: sample.score,
+                    box: sample.box,
+                    boxRaw: sample.boxRaw,
+                    width: result.width,
+                    height: result.height
                 });
             }
 
@@ -458,7 +553,38 @@ class KioskApp {
             const faceDetectedNow = result.face && result.face.length > 0;
             const face = faceDetectedNow ? result.face[0] : null;
 
+            if (objectDetections.length > 0) {
+                const objectDrawOptions = {
+                    color: '#ffb000',
+                    labelColor: '#ffb000',
+                    drawLabels: true,
+                    drawBoxes: true,
+                    drawPolygons: false,
+                    drawPoints: false
+                };
+
+                this.ctx.save();
+                this.ctx.setTransform(
+                    this.overlayTransform.scale,
+                    0,
+                    0,
+                    this.overlayTransform.scale,
+                    this.overlayTransform.offsetX,
+                    this.overlayTransform.offsetY
+                );
+                this.human.draw.object(this.canvas, objectDetections, objectDrawOptions);
+                this.ctx.restore();
+            }
+
             if (faceDetectedNow) {
+                if (!this.firstFaceLogged) {
+                    this.firstFaceLogged = true;
+                    this.markTime('firstFaceDetected');
+                    if (this.timingMarks.loadingHidden) {
+                        const delta = Math.round(this.timingMarks.firstFaceDetected - this.timingMarks.loadingHidden);
+                        console.log(`[Timing] loadingHidden -> firstFaceDetected: ${delta}ms`);
+                    }
+                }
 
             // Debug log to see what we're getting
             if (!this.faceDetected) {
@@ -474,7 +600,7 @@ class KioskApp {
 
             if (!this.faceDetected) {
                 if (this.consentActive) {
-                    this.updateConsentCountdown(this.lastFaceSeen);
+                    this.updateConsentCountdown(this.lastFaceSeen, face);
                 } else {
                     this.startConsentCountdown();
                 }
@@ -491,7 +617,7 @@ class KioskApp {
             };
 
             // Customize drawing options
-            const drawOptions = {
+            const faceDrawOptions = {
                 color: '#00ff88',
                 labelColor: '#00ff88',
                 fillPolygons: false,
@@ -512,7 +638,7 @@ class KioskApp {
             );
 
             // Use Human's built-in draw function for face overlay
-            this.human.draw.face(this.canvas, result.face, drawOptions);
+            this.human.draw.face(this.canvas, result.face, faceDrawOptions);
             this.ctx.restore();
 
         }
@@ -620,7 +746,7 @@ class KioskApp {
         this.showConsentInstructions(Math.ceil(this.consentDurationMs / 1000));
     }
 
-    updateConsentCountdown(now) {
+    updateConsentCountdown(now, face) {
         if (!this.consentActive) return;
         const elapsed = now - this.consentStartTime;
         const remainingMs = Math.max(this.consentDurationMs - elapsed, 0);
@@ -633,7 +759,7 @@ class KioskApp {
             this.consentActive = false;
             this.consentStartTime = null;
             this.consentLastSeconds = null;
-            this.startLabelSequence();
+            this.startLabelSequence(face);
         }
     }
 
@@ -645,7 +771,7 @@ class KioskApp {
         this.showDefaultInstructions();
     }
 
-    startLabelSequence() {
+    startLabelSequence(face) {
         if (this.faceDetected) return;
 
         this.faceDetected = true;
@@ -659,6 +785,7 @@ class KioskApp {
         this.faceLabelQueue = [];
         this.faceLabelAnchor = null;
         this.faceLabelAnchorDirty = true;
+        this.initFaceLabelLayout(face);
         this.updateProgress(0);
         this.resetLabelDecks();
 
@@ -796,10 +923,38 @@ class KioskApp {
     enqueueFaceLabel(line) {
         if (!line) return;
         this.faceLabelQueue.push(line);
-        while (this.faceLabelQueue.length > 10) {
+        while (this.faceLabelQueue.length > this.faceLabelQueueMax) {
             this.faceLabelQueue.shift();
         }
         this.faceLabelAnchorDirty = true;
+    }
+
+    initFaceLabelLayout(face) {
+        const base = this.faceLabelBaseLayout;
+        const targetLines = this.faceLabelMaxLines;
+        const faceHeight = face?.box?.[3];
+        if (!faceHeight || !Number.isFinite(faceHeight) || faceHeight <= 0) {
+            this.faceLabelLayout = { ...base, targetLines, faceHeight: null };
+            return;
+        }
+
+        const lineHeightRatio = base.lineHeight / base.fontSize;
+        const paddingYRatio = base.paddingY / base.lineHeight;
+        const paddingXRatio = base.paddingX / base.fontSize;
+        const heightFactor = lineHeightRatio * (targetLines + 2 * paddingYRatio);
+        const fontSize = faceHeight / heightFactor;
+        const lineHeight = fontSize * lineHeightRatio;
+        const paddingY = lineHeight * paddingYRatio;
+        const paddingX = fontSize * paddingXRatio;
+
+        this.faceLabelLayout = {
+            fontSize,
+            lineHeight,
+            paddingX,
+            paddingY,
+            targetLines,
+            faceHeight
+        };
     }
 
     updateProgress(percentage) {
@@ -985,10 +1140,11 @@ class KioskApp {
             return { ...parsed, valueColor: '#ffffff' };
         });
 
-        const fontSize = 21;
-        const lineHeight = 26;
-        const paddingX = 12;
-        const paddingY = 9;
+        const layout = this.faceLabelLayout || this.faceLabelBaseLayout;
+        const fontSize = layout.fontSize;
+        const lineHeight = layout.lineHeight;
+        const paddingX = layout.paddingX;
+        const paddingY = layout.paddingY;
 
         this.ctx.font = `600 ${fontSize}px "Fira Code", "Menlo", "Consolas", "Liberation Mono", "Courier New", monospace`;
         this.ctx.textBaseline = 'top';
@@ -1098,6 +1254,7 @@ class KioskApp {
         this.faceLabelQueue = [];
         this.faceLabelAnchor = null;
         this.faceLabelAnchorDirty = true;
+        this.faceLabelLayout = null;
         this.consentActive = false;
         this.consentStartTime = null;
         this.consentLastSeconds = null;
