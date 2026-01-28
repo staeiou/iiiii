@@ -1,6 +1,8 @@
 # Dependencies
 node_modules/
 human-source/
+.ipynb*
+.ipynb_checkpoints/
 # IDE
 .vscode/
 .idea/
