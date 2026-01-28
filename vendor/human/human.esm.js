@@ -38732,6 +38732,7 @@ async function process3(res, outputShape, config3) {
     const score = Math.trunc(100 * detections[0][id2][4]) / 100;
     const classVal = detections[0][id2][5];
     if (Number.isNaN(classVal)) continue;
+    if (classVal === 0) continue;
     const label = labels2[classVal].label;
     const [x, y8] = [
       detections[0][id2][0] / inputSize3,

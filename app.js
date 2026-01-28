@@ -513,9 +513,6 @@ class KioskApp {
             }
 
             const result = this.lastDetectionResult;
-            const objectDetections = Array.isArray(result.object)
-                ? result.object.filter((det) => det.label !== 'person')
-                : [];
             this.lastUiTime = now;
             if (result?.width && result?.height) {
                 this.detectionSize = { width: result.width, height: result.height };
@@ -524,14 +521,14 @@ class KioskApp {
             if (this.frameCount % 60 === 0 || (result.face && result.face.length > 0)) {
                 console.log('Detection result:', {
                     faceCount: result.face?.length || 0,
-                    objectCount: objectDetections.length,
+                    objectCount: result.object?.length || 0,
                     faceDetected: this.faceDetected,
                     canvasVisible: this.canvas.style.display !== 'none',
                     timestamp: Date.now()
                 });
             }
-            if (this.frameCount % 60 === 0 && objectDetections.length > 0) {
-                const sample = objectDetections[0];
+            if (this.frameCount % 60 === 0 && result.object && result.object.length > 0) {
+                const sample = result.object[0];
                 console.log('Object sample:', {
                     label: sample.label,
                     score: sample.score,
@@ -553,7 +550,7 @@ class KioskApp {
             const faceDetectedNow = result.face && result.face.length > 0;
             const face = faceDetectedNow ? result.face[0] : null;
 
-            if (objectDetections.length > 0) {
+            if (result.object && result.object.length > 0) {
                 const objectDrawOptions = {
                     color: '#ffb000',
                     labelColor: '#ffb000',
@@ -572,7 +569,7 @@ class KioskApp {
                     this.overlayTransform.offsetX,
                     this.overlayTransform.offsetY
                 );
-                this.human.draw.object(this.canvas, objectDetections, objectDrawOptions);
+                this.human.draw.object(this.canvas, result.object, objectDrawOptions);
                 this.ctx.restore();
             }
 
