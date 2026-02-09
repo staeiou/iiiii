@@ -23,7 +23,7 @@ class KioskApp {
         this.consentActive = false;
         this.consentStartTime = null;
         this.consentLastSeconds = null;
-        this.consentDurationMs = 10000;
+        this.consentDurationMs = 15000;
         this.labelInterval = null;
         this.animationFrame = null;
         this.frameCount = 0;
@@ -155,9 +155,6 @@ class KioskApp {
             this.setupLayoutToggle();
             console.log('✓ setupLayoutToggle complete');
 
-            // Prewarm Human to reduce first-detect latency
-            await this.prewarmHuman();
-
             // Hide loading
             console.log('Hiding loading screen...');
             this.loading.style.display = 'none';
@@ -168,6 +165,10 @@ class KioskApp {
             console.log('Starting detection loop...');
             this.detect();
             this.markTime('detectLoopStart');
+
+            // Prewarm Human in background (non-blocking)
+            this.prewarmHuman().catch(err => console.warn('Background prewarm failed:', err));
+
             console.log('✓ Initialization complete!');
         } catch (error) {
             console.error('❌ Initialization error:', error);
