@@ -25,6 +25,7 @@ class KioskApp {
         this.consentLastSeconds = null;
         this.consentDurationMs = 15000;
         this.labelInterval = null;
+        this.loadingMessageInterval = null;
         this.animationFrame = null;
         this.frameCount = 0;
         this.resizeObserver = null;
@@ -137,6 +138,9 @@ class KioskApp {
             this.markTime('initStart');
             console.log('🚀 Starting initialization...');
 
+            // Start cycling loading messages
+            this.startLoadingMessages();
+
             // Initialize Human library
             await this.initHuman();
             console.log('✓ initHuman complete');
@@ -155,15 +159,6 @@ class KioskApp {
             this.setupLayoutToggle();
             console.log('✓ setupLayoutToggle complete');
 
-            // Update loading message to show we're ready
-            this.loading.innerHTML = `
-                <div class="loading-content">
-                    <div class="spinner"></div>
-                    <p>Warming up detection models...</p>
-                    <p class="loading-sub">First detection may take a moment</p>
-                </div>
-            `;
-
             // Start detection loop immediately
             console.log('Starting detection loop...');
             this.detect();
@@ -172,6 +167,7 @@ class KioskApp {
             // Hide loading after a short delay to let first frame render
             setTimeout(() => {
                 console.log('Hiding loading screen...');
+                this.stopLoadingMessages();
                 this.loading.style.display = 'none';
                 console.log('✓ Loading screen hidden');
                 this.markTime('loadingHidden');
@@ -185,13 +181,44 @@ class KioskApp {
         }
     }
 
+    startLoadingMessages() {
+        const messages = [
+            "Synchronizing administrative signals",
+            "Reticulating splines",
+            "Calibrating surveillance parameters",
+            "Normalizing ideological vectors",
+            "Tokenizing institutional affect",
+            "Compiling compliance matrices",
+            "Optimizing bureaucratic gradients",
+            "Initializing panopticon subroutines",
+            "Quantifying existential dread",
+            "Bootstrapping neoliberal heuristics"
+        ];
+
+        let index = 0;
+        this.loadingMessageInterval = setInterval(() => {
+            const loadingSub = this.loading.querySelector('.loading-sub');
+            if (loadingSub) {
+                loadingSub.textContent = messages[index];
+                index = (index + 1) % messages.length;
+            }
+        }, 2000);
+    }
+
+    stopLoadingMessages() {
+        if (this.loadingMessageInterval) {
+            clearInterval(this.loadingMessageInterval);
+            this.loadingMessageInterval = null;
+        }
+    }
+
     async initHuman() {
         console.log('Initializing Human library...');
         const config = {
             backend: 'webgl',
             modelBasePath: './vendor/human-models/models/',
             wasmPath: './vendor/tfjs-backend-wasm/',
-            cacheModels: true,  // Cache models in IndexedDB for faster subsequent loads
+            cacheModels: false,  // Cache models in IndexedDB for faster subsequent loads
             cacheSensitivity: 0.7,
             filter: { enabled: false },
             face: {
@@ -212,23 +239,12 @@ class KioskApp {
                 liveness: { enabled: false }
             },
             body: {
-                enabled: false,  // Disable body detection to speed up initial load
-                modelPath: 'movenet-lightning.json',
-                maxDetected: 1,
-                minConfidence: 0.3,
-                skipFrames: 60,
-                skipTime: 1000
+                enabled: false
             },
             hand: { enabled: false },
             gesture: { enabled: false },
             object: {
-                enabled: true,
-                modelPath: 'centernet.json',
-                minConfidence: 0.2,
-                iouThreshold: 0.4,
-                maxDetected: 10,
-                skipFrames: 30,  // Skip more frames to reduce compute load
-                skipTime: 1000   // Only detect objects every second
+                enabled: false
             }
         };
 
@@ -1325,6 +1341,7 @@ class KioskApp {
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
         }
+        this.stopLoadingMessages();
         this.clearLabelTimers();
         if (this.video.srcObject) {
             this.video.srcObject.getTracks().forEach(track => track.stop());
