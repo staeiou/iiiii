@@ -155,19 +155,27 @@ class KioskApp {
             this.setupLayoutToggle();
             console.log('✓ setupLayoutToggle complete');
 
-            // Hide loading
-            console.log('Hiding loading screen...');
-            this.loading.style.display = 'none';
-            console.log('✓ Loading screen hidden');
-            this.markTime('loadingHidden');
+            // Update loading message to show we're ready
+            this.loading.innerHTML = `
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <p>Warming up detection models...</p>
+                    <p class="loading-sub">First detection may take a moment</p>
+                </div>
+            `;
 
-            // Start detection loop
+            // Start detection loop immediately
             console.log('Starting detection loop...');
             this.detect();
             this.markTime('detectLoopStart');
 
-            // Prewarm Human in background (non-blocking)
-            this.prewarmHuman().catch(err => console.warn('Background prewarm failed:', err));
+            // Hide loading after a short delay to let first frame render
+            setTimeout(() => {
+                console.log('Hiding loading screen...');
+                this.loading.style.display = 'none';
+                console.log('✓ Loading screen hidden');
+                this.markTime('loadingHidden');
+            }, 100);
 
             console.log('✓ Initialization complete!');
         } catch (error) {
@@ -183,7 +191,7 @@ class KioskApp {
             backend: 'webgl',
             modelBasePath: './vendor/human-models/models/',
             wasmPath: './vendor/tfjs-backend-wasm/',
-            cacheModels: false,
+            cacheModels: true,  // Cache models in IndexedDB for faster subsequent loads
             cacheSensitivity: 0.7,
             filter: { enabled: false },
             face: {
@@ -204,7 +212,7 @@ class KioskApp {
                 liveness: { enabled: false }
             },
             body: {
-                enabled: true,
+                enabled: false,  // Disable body detection to speed up initial load
                 modelPath: 'movenet-lightning.json',
                 maxDetected: 1,
                 minConfidence: 0.3,
@@ -219,8 +227,8 @@ class KioskApp {
                 minConfidence: 0.2,
                 iouThreshold: 0.4,
                 maxDetected: 10,
-                skipFrames: 0,
-                skipTime: 0
+                skipFrames: 30,  // Skip more frames to reduce compute load
+                skipTime: 1000   // Only detect objects every second
             }
         };
 
@@ -940,7 +948,7 @@ class KioskApp {
         const paddingYRatio = base.paddingY / base.lineHeight;
         const paddingXRatio = base.paddingX / base.fontSize;
         const heightFactor = lineHeightRatio * (targetLines + 2 * paddingYRatio);
-        const fontSize = faceHeight / heightFactor;
+        const fontSize = (faceHeight / heightFactor) * 0.75;  // 75% of face box size
         const lineHeight = fontSize * lineHeightRatio;
         const paddingY = lineHeight * paddingYRatio;
         const paddingX = fontSize * paddingXRatio;
