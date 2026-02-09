@@ -16,21 +16,9 @@ const bucket100 = (score) => {
 };
 
 const LabelGenerator = {
-    // Phase 0: "Obvious" inferences (front-loaded before the satirical escalation)
-    phase0Labels: [
-        { category: 'Facial Recognition ID Match', getValue: () => `${randInt(90, 99)}%` },
-        { category: 'Social Media Profile Match', getValue: () => `${randInt(90, 99)}%` },
-        { category: 'LinkedIn Profile Authenticity', getValue: () => `${randInt(8, 54)}%` },
-        { category: 'Influence Quotient', getValue: () => `${randInt(8, 34)}th percentile` },
-        { category: 'Security Threat (property crimes)', getValue: () => `${randInt(38, 97)}%` },
-        { category: 'Security Threat (thought crimes)', getValue: () => `${randInt(38, 97)}%` }
-    ],
 
-    // Phase 1: Psychometric inference (confident, quantified, vague)
-    phase1Labels: [
-        { category: 'Culture Fit Score', getValue: () => `${randInt(2, 99)}%` },
-        { category: 'Work Ethic', getValue: () => `${randInt(38, 97)}%` },
-        { category: 'Identity Fragmentation', getValue: () => `${randFloat(3.0, 8.9, 1).toFixed(1)} distinct personas` },
+    
+    phase0Labels: [
         {
             category: 'Stress Level',
             getValue: () => {
@@ -51,17 +39,39 @@ const LabelGenerator = {
                 const types = ['INTJ', 'INTP', 'INTJ', 'INTP', 'INFJ', 'INFP', 'INFJ', 'INFP'];
                 return types[randInt(0, types.length - 1)];
             }
-        }
+        },
+        { category: 'Culture Fit Score', getValue: () => `${randInt(2, 99)}%` },
+        { category: 'Work Ethic', getValue: () => `${randInt(38, 97)}%` },
+        { category: 'Identity Fragmentation', getValue: () => `${randFloat(3.0, 8.9, 1).toFixed(1)} distinct personas` },
+        { category: 'Social Battery Remaining', getValue: () => `${randInt(0, 67)}%` },
+        { category: 'Security Threat (property crimes)', getValue: () => `${randInt(38, 97)}%` },
+        { category: 'Security Threat (thought crimes)', getValue: () => `${randInt(38, 97)}%` },
+        { category: 'Blood Type', getValue: () => ['Oh, No', 'Oh, No'][randInt(0, 2)] }
 
     ],
+    // Phase 0: "Obvious" inferences (front-loaded before the satirical escalation)
+    phase1Labels: [
+        { category: 'Distance from True Self', getValue: () => `${randFloat(24.0, 1800.0, 1).toFixed(1)}mi` },
+        { category: 'Time to Next Existential Crisis', getValue: () => formatDhr(randInt(0, 13), randInt(0, 23)) },
+        { category: 'Existential Dread Level', getValue: () => `${randInt(1, 10)}/10` },
+        { category: 'Loss of Faith in Humanity', getValue: () => `${randInt(52, 99)}%` },
+        { category: 'Internal Scream Frequency', getValue: () => `${randInt(240, 1400)}Hz` },
+        { category: 'Hunger Level', getValue: () => `${randInt(22, 99)}%` },
+        { category: 'Sleep Debt', getValue: () => formatHm(randInt(9, 21), randInt(0, 59)) },
+        { category: 'Original Thought Suppression', getValue: () => `${randInt(72, 99)}%` },
+        { category: 'Percent of Soul Sold', getValue: () => `${randInt(12, 99)}%` },
+        { category: 'Net Institutional Value', getValue: () => `$${randFloat(99, 999, 2).toFixed(2)}/day` }
+    ],
+
+
 
     // Phase 2: Institutional/corporate valuation (human -> KPI)
     phase2Labels: [
-        { category: 'Sleep Debt', getValue: () => formatHm(randInt(9, 21), randInt(0, 59)) },
-        { category: 'Net Institutional Value', getValue: () => `$${randFloat(99, 999, 2).toFixed(2)}/day` },
-        { category: 'Original Thought Suppression', getValue: () => `${randInt(72, 99)}%` },
-        { category: 'Percent of Soul Sold', getValue: () => `${randInt(12, 99)}%` },
-        { category: 'Unpaid Emotional Labor', getValue: () => `${randFloat(1.0, 18.0, 1).toFixed(1)} “no worries”/day` },
+        { category: 'Facial Recognition ID Match', getValue: () => `${randInt(90, 99)}%` },
+        { category: 'Social Media Profile Match', getValue: () => `${randInt(90, 99)}%` },
+        { category: 'LinkedIn Profile Authenticity', getValue: () => `${randInt(8, 54)}%` },
+        { category: 'Influence Quotient', getValue: () => `${randInt(8, 34)}th percentile` },
+        { category: 'Unpaid Emotional Labor', getValue: () => `${randFloat(1.0, 18.0, 1).toFixed(1)} “no worries”/day` }
     ],
 
     // Phase 3: Prestige society / quantified self / algorithmic vibe-reading
@@ -79,13 +89,6 @@ const LabelGenerator = {
 
     // Phase 4: Deep interior readout (absurd, confident, precise)
     phase4Labels: [
-        { category: 'Distance from True Self', getValue: () => `${randFloat(24.0, 1800.0, 1).toFixed(1)}mi` },
-        { category: 'Time to Next Existential Crisis', getValue: () => formatDhr(randInt(0, 13), randInt(0, 23)) },
-        { category: 'Existential Dread Level', getValue: () => `${randInt(1, 10)}/10` },
-        { category: 'Loss of Faith in Humanity', getValue: () => `${randInt(52, 99)}%` },
-        { category: 'Internal Scream Frequency', getValue: () => `${randInt(240, 1400)}Hz` },
-        { category: 'Hunger Level', getValue: () => `${randInt(22, 99)}%` },
-        { category: 'Social Battery Remaining', getValue: () => `${randInt(0, 67)}%` },
         { category: 'Fluorescent Light Exposure (7d)', getValue: () => `${randInt(12, 140)}hr` },
         { category: 'Natural Sunlight Exposure (7d)', getValue: () => `${randInt(0, 240)}m` },
         { category: 'Time to next Real Weekend', getValue: () => `${randInt(2, 40)} days` },
@@ -105,8 +108,8 @@ const LabelGenerator = {
         { category: 'Inner Critic Volume', getValue: () => `${randInt(60, 112)} dB` },
         { category: 'Compliment Absorption Rate', getValue: () => `${randInt(0, 66)}%` },
         { category: 'Criticism Retention Half‑Life', getValue: () => `${randInt(7, 240)} days` },
-        { category: 'Guilt Multiplier', getValue: () => `${randFloat(1.0, 6.2, 1).toFixed(1)}x` },
-        { category: 'Blood Type', getValue: () => ['Oh, No', 'Red'][randInt(0, 1)] }
+        { category: 'Guilt Multiplier', getValue: () => `${randFloat(1.0, 6.2, 1).toFixed(1)}x` }
+
     ],
 
     // Get labels for a specific phase
