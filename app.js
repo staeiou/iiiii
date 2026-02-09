@@ -26,6 +26,7 @@ class KioskApp {
         this.consentDurationMs = 15000;
         this.labelInterval = null;
         this.loadingMessageInterval = null;
+        this.loadingProgressInterval = null;
         this.animationFrame = null;
         this.frameCount = 0;
         this.resizeObserver = null;
@@ -120,6 +121,7 @@ class KioskApp {
         this.timingLogBase = null;
         this.detectionLoopStarted = false;
         this.firstFaceLogged = false;
+        this.waitingForFirstDetection = false;
 
         this.init();
     }
@@ -138,8 +140,9 @@ class KioskApp {
             this.markTime('initStart');
             console.log('🚀 Starting initialization...');
 
-            // Start cycling loading messages
+            // Start cycling loading messages and progress bar
             this.startLoadingMessages();
+            this.startLoadingProgress();
 
             // Initialize Human library
             await this.initHuman();
@@ -164,14 +167,20 @@ class KioskApp {
             this.detect();
             this.markTime('detectLoopStart');
 
-            // Hide loading after a short delay to let first frame render
+            // Keep loading screen visible until first detection or 10 second timeout
+            this.waitingForFirstDetection = true;
+
+            // Fallback: hide loading after 10 seconds even if no detection
             setTimeout(() => {
-                console.log('Hiding loading screen...');
-                this.stopLoadingMessages();
-                this.loading.style.display = 'none';
-                console.log('✓ Loading screen hidden');
-                this.markTime('loadingHidden');
-            }, 100);
+                if (this.waitingForFirstDetection) {
+                    console.log('Loading timeout - hiding screen');
+                    this.waitingForFirstDetection = false;
+                    this.stopLoadingMessages();
+                    this.stopLoadingProgress();
+                    this.loading.style.display = 'none';
+                    this.markTime('loadingHidden');
+                }
+            }, 10000);
 
             console.log('✓ Initialization complete!');
         } catch (error) {
@@ -210,6 +219,50 @@ class KioskApp {
             clearInterval(this.loadingMessageInterval);
             this.loadingMessageInterval = null;
         }
+    }
+
+    startLoadingProgress() {
+        // Add progress bar to loading screen if not exists
+        if (!this.loading.querySelector('.loading-progress')) {
+            const progressContainer = document.createElement('div');
+            progressContainer.className = 'loading-progress';
+            progressContainer.innerHTML = `
+                <div class="loading-progress-bar">
+                    <div class="loading-progress-fill"></div>
+                </div>
+                <div class="loading-progress-text">0%</div>
+            `;
+            this.loading.querySelector('.loading-content').appendChild(progressContainer);
+        }
+
+        const progressFill = this.loading.querySelector('.loading-progress-fill');
+        const progressText = this.loading.querySelector('.loading-progress-text');
+        const duration = 10000; // 10 seconds
+        const interval = 100; // Update every 100ms
+        const increment = (interval / duration) * 100;
+        let progress = 0;
+
+        this.loadingProgressInterval = setInterval(() => {
+            progress = Math.min(progress + increment, 100);
+            if (progressFill) progressFill.style.width = `${progress}%`;
+            if (progressText) progressText.textContent = `${Math.floor(progress)}%`;
+
+            if (progress >= 100) {
+                this.stopLoadingProgress();
+            }
+        }, interval);
+    }
+
+    stopLoadingProgress() {
+        if (this.loadingProgressInterval) {
+            clearInterval(this.loadingProgressInterval);
+            this.loadingProgressInterval = null;
+        }
+        // Set to 100% when done
+        const progressFill = this.loading.querySelector('.loading-progress-fill');
+        const progressText = this.loading.querySelector('.loading-progress-text');
+        if (progressFill) progressFill.style.width = '100%';
+        if (progressText) progressText.textContent = '100%';
     }
 
     async initHuman() {
@@ -602,6 +655,18 @@ class KioskApp {
                 if (!this.firstFaceLogged) {
                     this.firstFaceLogged = true;
                     this.markTime('firstFaceDetected');
+
+                    // Hide loading screen on first detection
+                    if (this.waitingForFirstDetection) {
+                        this.waitingForFirstDetection = false;
+                        console.log('Hiding loading screen...');
+                        this.stopLoadingMessages();
+                        this.stopLoadingProgress();
+                        this.loading.style.display = 'none';
+                        console.log('✓ Loading screen hidden');
+                        this.markTime('loadingHidden');
+                    }
+
                     if (this.timingMarks.loadingHidden) {
                         const delta = Math.round(this.timingMarks.firstFaceDetected - this.timingMarks.loadingHidden);
                         console.log(`[Timing] loadingHidden -> firstFaceDetected: ${delta}ms`);
@@ -1342,6 +1407,7 @@ class KioskApp {
             cancelAnimationFrame(this.animationFrame);
         }
         this.stopLoadingMessages();
+        this.stopLoadingProgress();
         this.clearLabelTimers();
         if (this.video.srcObject) {
             this.video.srcObject.getTracks().forEach(track => track.stop());
