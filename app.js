@@ -1029,7 +1029,7 @@ class KioskApp {
         const paddingYRatio = base.paddingY / base.lineHeight;
         const paddingXRatio = base.paddingX / base.fontSize;
         const heightFactor = lineHeightRatio * (targetLines + 2 * paddingYRatio);
-        const fontSize = (faceHeight / heightFactor) * 0.5;  // 75% of face box size
+        const fontSize = (faceHeight / heightFactor) * 0.75;  // 75% of face box size
         const lineHeight = fontSize * lineHeightRatio;
         const paddingY = lineHeight * paddingYRatio;
         const paddingX = fontSize * paddingXRatio;
