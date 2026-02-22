@@ -40,35 +40,34 @@ const LabelGenerator = {
                 return types[randInt(0, types.length - 1)];
             }
         },
+     //   { category: 'Identity Fragmentation', getValue: () => `${randFloat(3.0, 8.9, 1).toFixed(1)} distinct personas` },
+        { category: 'Hunger Level', getValue: () => `${randInt(22, 99)}%` },
+        { category: 'Sleep Debt', getValue: () => formatHm(randInt(9, 21), randInt(0, 59)) },
+        { category: 'Social Battery Remaining', getValue: () => `${randInt(0, 67)}%` },
         { category: 'Culture Fit Score', getValue: () => `${randInt(2, 99)}%` },
         { category: 'Work Ethic', getValue: () => `${randInt(38, 97)}%` },
-     //   { category: 'Identity Fragmentation', getValue: () => `${randFloat(3.0, 8.9, 1).toFixed(1)} distinct personas` },
-        { category: 'Social Battery Remaining', getValue: () => `${randInt(0, 67)}%` },
-        { category: 'Criminal Threat (property)', getValue: () => `${randInt(38, 97)}%` },
-        { category: 'Criminal Threat (thought)', getValue: () => `${randInt(38, 97)}%` },
+        { category: 'Criminal Risk (property)', getValue: () => `${randInt(38, 97)}%` },
+        { category: 'Criminal Risk (thought)', getValue: () => `${randInt(38, 97)}%` },
         { category: 'Blood Type', getValue: () => ['Oh, No', 'Oh, No'][randInt(0, 1)] }
 
     ],
     // Phase 0: "Obvious" inferences (front-loaded before the satirical escalation)
     phase1Labels: [
         { category: 'Distance from True Self', getValue: () => `${randFloat(24.0, 1800.0, 1).toFixed(1)}mi` },
-        { category: 'Time to Next Existential Crisis', getValue: () => formatDhr(randInt(0, 13), randInt(0, 23)) },
-        { category: 'Existential Dread Level', getValue: () => `${randInt(1, 10)}/10` },
-        { category: 'Loss of Faith in Humanity', getValue: () => `${randInt(52, 99)}%` },
+        { category: 'Time to Existential Crisis', getValue: () => formatDhr(randInt(0, 13), randInt(0, 23)) },
+        { category: 'Dread Level', getValue: () => `${randInt(1, 10)}/10` },
+        { category: 'Faith in Humanity', getValue: () => `${randInt(2, 33)}%` },
         { category: 'Internal Scream Frequency', getValue: () => `${randInt(240, 1400)}Hz` },
-        { category: 'Hunger Level', getValue: () => `${randInt(22, 99)}%` },
-        { category: 'Sleep Debt', getValue: () => formatHm(randInt(9, 21), randInt(0, 59)) },
-        { category: 'Original Thought Suppression', getValue: () => `${randInt(72, 99)}%` },
         { category: 'Percent of Soul Sold', getValue: () => `${randInt(12, 99)}%` },
-        { category: 'Net Institutional Value', getValue: () => `$${randFloat(99, 999, 2).toFixed(2)}/day` }
+        { category: 'Institutional Value', getValue: () => `$${randFloat(99, 999, 2).toFixed(2)}/day` }
     ],
 
 
 
     // Phase 2: Institutional/corporate valuation (human -> KPI)
     phase2Labels: [
-        { category: 'Facial Recognition ID Match', getValue: () => `${randInt(90, 99)}%` },
-        { category: 'Social Media Profile Match', getValue: () => `${randInt(90, 99)}%` },
+        { category: 'Facial ID Match', getValue: () => `${randInt(90, 99)}%` },
+        { category: 'Social Media Match', getValue: () => `${randInt(90, 99)}%` },
         { category: 'LinkedIn Profile Authenticity', getValue: () => `${randInt(8, 54)}%` },
         { category: 'Influence Quotient', getValue: () => `${randInt(8, 34)}th percentile` },
         { category: 'Unpaid Emotional Labor', getValue: () => `${randFloat(1.0, 18.0, 1).toFixed(1)} “no worries”/day` }
@@ -80,9 +79,7 @@ const LabelGenerator = {
         { category: 'Hot Take Temperature', getValue: () => `${randInt(34, 109)}°C` },
         { category: 'Average Smile Duration', getValue: () => `${randInt(2, 33)}s` },
         { category: 'Main Character Probability', getValue: () => `${randInt(6, 94)}%` },
-        { category: 'Ironic Detachment Level', getValue: () => `${randInt(38, 99)}%` },
-        { category: 'Caffeine‑to‑Serotonin Substitution', getValue: () => `${randFloat(0.7, 4.6, 1).toFixed(1)}x` },
-        { category: 'Subscription Load', getValue: () => `${randFloat(0.0, 12.0, 1).toFixed(1)} services/month` },
+        { category: 'Caffeine‑to‑Serotonin Ratio', getValue: () => `${randFloat(0.7, 4.6, 1).toFixed(1)}x` },
         { category: 'Life Admin Backlog', getValue: () => `${randInt(0, 120)} tasks` },
         { category: 'Career Pivot Probability', getValue: () => `${randInt(8, 92)}%` },
     ],
@@ -93,21 +90,15 @@ const LabelGenerator = {
         { category: 'Natural Sunlight Exposure (7d)', getValue: () => `${randInt(0, 240)}m` },
         { category: 'Time to next Real Weekend', getValue: () => `${randInt(2, 40)} days` },
         { category: 'Screen Time (past 24h)', getValue: () => formatHm(randInt(2, 16), randInt(0, 59)) },
-        { category: 'Emotional Bandwidth Remaining', getValue: () => `${randInt(3, 78)}%` },
+        { category: 'Emotional Bandwidth Left', getValue: () => `${randInt(3, 78)}%` },
         { category: 'Silence Tolerance', getValue: () => `${randInt(3, 160)}s` },
         { category: 'Inner Monologue Volume', getValue: () => `${randInt(48, 102)} dB` },
         { category: 'Social Comparison Rate', getValue: () => `${randInt(0, 84)} comparisons/hr` },
         { category: 'Perfectionism Coefficient', getValue: () => `${randFloat(0.9, 4.9, 1).toFixed(1)}x` },
         { category: 'Self‑Worth Tied to Output', getValue: () => `${randInt(35, 99)}%` },
-        { category: 'Rest Guilt Level', getValue: () => `${randInt(1, 10)}/10` },
-        { category: 'Boundary Enforcement Probability', getValue: () => `${randInt(0, 54)}%` },
         { category: 'Dopamine Budget Remaining', getValue: () => `${randInt(0, 55)}%` },
-        { category: 'Purpose Clarity', getValue: () => `${randInt(0, 66)}%` },
-        { category: 'Executive Function Availability', getValue: () => `${randInt(4, 74)}%` },
-        { category: 'Working Memory Free Space', getValue: () => `${randInt(0, 42)}%` },
         { category: 'Inner Critic Volume', getValue: () => `${randInt(60, 112)} dB` },
         { category: 'Compliment Absorption Rate', getValue: () => `${randInt(0, 66)}%` },
-        { category: 'Criticism Retention Half‑Life', getValue: () => `${randInt(7, 240)} days` },
         { category: 'Guilt Multiplier', getValue: () => `${randFloat(1.0, 6.2, 1).toFixed(1)}x` }
 
     ],
