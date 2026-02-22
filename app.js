@@ -38,7 +38,7 @@ class KioskApp {
         this.faceLabelAnchorDirty = true;
         this.faceLabelLayout = null;
         this.faceLabelMaxLines = 14;
-        this.faceLabelQueueMax = 10;
+        this.faceLabelQueueMax = 5;
         this.faceLabelBaseLayout = {
             fontSize: 21,
             lineHeight: 26,
@@ -1029,7 +1029,7 @@ class KioskApp {
         const paddingYRatio = base.paddingY / base.lineHeight;
         const paddingXRatio = base.paddingX / base.fontSize;
         const heightFactor = lineHeightRatio * (targetLines + 2 * paddingYRatio);
-        const fontSize = (faceHeight / heightFactor) * 0.75;  // 75% of face box size
+        const fontSize = (faceHeight / heightFactor) * 0.5;  // 75% of face box size
         const lineHeight = fontSize * lineHeightRatio;
         const paddingY = lineHeight * paddingYRatio;
         const paddingX = fontSize * paddingXRatio;
@@ -1203,7 +1203,7 @@ class KioskApp {
         if (!face || !face.box) return;
 
         const lines = [];
-        if (face.score !== undefined) lines.push(`Confidence ${Math.round(face.score * 100)}%`);
+        // Confidence line removed
         if (face.age !== undefined) lines.push(`Age ${Math.round(face.age)} years`);
         if (face.gender) {
             const genderScore = face.genderScore !== undefined ? ` ${Math.round(face.genderScore * 100)}%` : '';

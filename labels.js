@@ -42,11 +42,11 @@ const LabelGenerator = {
         },
         { category: 'Culture Fit Score', getValue: () => `${randInt(2, 99)}%` },
         { category: 'Work Ethic', getValue: () => `${randInt(38, 97)}%` },
-        { category: 'Identity Fragmentation', getValue: () => `${randFloat(3.0, 8.9, 1).toFixed(1)} distinct personas` },
+     //   { category: 'Identity Fragmentation', getValue: () => `${randFloat(3.0, 8.9, 1).toFixed(1)} distinct personas` },
         { category: 'Social Battery Remaining', getValue: () => `${randInt(0, 67)}%` },
-        { category: 'Security Threat (property crimes)', getValue: () => `${randInt(38, 97)}%` },
-        { category: 'Security Threat (thought crimes)', getValue: () => `${randInt(38, 97)}%` },
-        { category: 'Blood Type', getValue: () => ['Oh, No', 'Oh, No'][randInt(0, 2)] }
+        { category: 'Criminal Threat (property)', getValue: () => `${randInt(38, 97)}%` },
+        { category: 'Criminal Threat (thought)', getValue: () => `${randInt(38, 97)}%` },
+        { category: 'Blood Type', getValue: () => ['Oh, No', 'Oh, No'][randInt(0, 1)] }
 
     ],
     // Phase 0: "Obvious" inferences (front-loaded before the satirical escalation)
