@@ -23,7 +23,7 @@ class KioskApp {
         this.consentActive = false;
         this.consentStartTime = null;
         this.consentLastSeconds = null;
-        this.consentDurationMs = 15000;
+        this.consentDurationMs = 3000;
         this.labelInterval = null;
         this.loadingMessageInterval = null;
         this.loadingProgressInterval = null;
@@ -285,7 +285,7 @@ class KioskApp {
                 },
                 mesh: { enabled: true },
                 attention: { enabled: false },
-                iris: { enabled: false },
+                iris: { enabled: true },
                 description: { enabled: true },  // This provides age, gender, race
                 emotion: { enabled: true },
                 antispoof: { enabled: false },
@@ -710,7 +710,8 @@ class KioskApp {
                 fillPolygons: false,
                 drawPoints: true,
                 drawPolygons: true,
-                drawLabels: false
+                drawLabels: false,
+                drawGaze: true
             };
 
             // Use a cover transform so overlays match the cropped video
@@ -1029,7 +1030,8 @@ class KioskApp {
         const paddingYRatio = base.paddingY / base.lineHeight;
         const paddingXRatio = base.paddingX / base.fontSize;
         const heightFactor = lineHeightRatio * (targetLines + 2 * paddingYRatio);
-        const fontSize = (faceHeight / heightFactor) * 0.75;  // 75% of face box size
+        const rawFontSize = (faceHeight / heightFactor) * 0.75;  // 75% of face box size
+        const fontSize = Math.max(10, Math.min(rawFontSize, 16));
         const lineHeight = fontSize * lineHeightRatio;
         const paddingY = lineHeight * paddingYRatio;
         const paddingX = fontSize * paddingXRatio;
