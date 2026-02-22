@@ -1029,9 +1029,16 @@ class KioskApp {
         const lineHeightRatio = base.lineHeight / base.fontSize;
         const paddingYRatio = base.paddingY / base.lineHeight;
         const paddingXRatio = base.paddingX / base.fontSize;
+
+        // Compute font size relative to screen pixels, not video pixels.
+        // face.box values are in video coords; overlayTransform.scale converts
+        // video coords to canvas pixels, and dpr converts canvas pixels to CSS pixels.
+        const dpr = window.devicePixelRatio || 1;
+        const scale = (this.overlayTransform?.scale || dpr) / dpr;
+        const screenFaceHeight = faceHeight * scale;  // face height in CSS pixels
         const heightFactor = lineHeightRatio * (targetLines + 2 * paddingYRatio);
-        const rawFontSize = (faceHeight / heightFactor) * 0.75;  // 75% of face box size
-        const fontSize = Math.max(10, Math.min(rawFontSize, 16));
+        const rawFontSize = (screenFaceHeight / heightFactor) * 0.75;
+        const fontSize = Math.max(10, Math.min(rawFontSize, 18)) / scale;  // convert back to video coords
         const lineHeight = fontSize * lineHeightRatio;
         const paddingY = lineHeight * paddingYRatio;
         const paddingX = fontSize * paddingXRatio;
