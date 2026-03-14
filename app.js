@@ -23,7 +23,7 @@ class KioskApp {
         this.consentActive = false;
         this.consentStartTime = null;
         this.consentLastSeconds = null;
-        this.consentDurationMs = 3000;
+        this.consentDurationMs = 10000;
         this.labelInterval = null;
         this.loadingMessageInterval = null;
         this.loadingProgressInterval = null;
