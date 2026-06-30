@@ -557,17 +557,31 @@ class KioskApp {
         const closeBtn = document.getElementById('realityClose');
         if (!panel) return;
 
-        const close = () => panel.classList.add('hidden');
+        const open = () => {
+            panel.classList.remove('hidden');
+            document.body.classList.add('reality-panel-open');
+            if (closeBtn) closeBtn.focus({ preventScroll: true });
+        };
+        const close = () => {
+            panel.classList.add('hidden');
+            document.body.classList.remove('reality-panel-open');
+        };
 
         // The in-card links are recreated when instructions innerHTML changes,
         // so use delegation: any .reality-trigger opens the panel.
         document.addEventListener('click', (e) => {
-            if (e.target.closest('.reality-trigger')) panel.classList.remove('hidden');
+            const trigger = e.target instanceof Element ? e.target.closest('.reality-trigger') : null;
+            if (!trigger) return;
+            e.preventDefault();
+            open();
         });
         if (closeBtn) closeBtn.addEventListener('click', close);
         // Tap the dimmed backdrop (outside the text) to dismiss
         panel.addEventListener('click', (e) => {
             if (e.target === panel) close();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !panel.classList.contains('hidden')) close();
         });
     }
 

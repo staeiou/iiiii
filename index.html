@@ -48,15 +48,6 @@
 
                 <!-- Reality disclosure: in-card link above; this floating one shows during inference -->
                 <button id="realityLink" class="reality-link reality-trigger hidden" type="button">is this real?</button>
-                <div id="realityPanel" class="reality-panel hidden">
-                    <div class="reality-panel-inner">
-                        <h3>Is this real?</h3>
-                        <p>Partly.</p>
-                        <p>The face detection, age, gender, and emotion scores come from a real machine learning model (<a href="https://github.com/vladmandic/human" target="_blank" rel="noopener">Human</a> by Vladimir Mandic) that runs 100% privately in your browser. No image or data is actually stored or shared. Nothing leaves your device. I have no way to actuallky access your webcam data.</p>
-                        <p>All other data points ostensibly inferred from your face are fake. You can see the open-source code <a href="https://github.com/staeiou/iiiii" target="_blank" >in this repository</a>.</p>
-                        <button id="realityClose" class="reality-close" type="button">Close</button>
-                    </div>
-                </div>
             </div>
 
             <!-- Analysis Panel -->
@@ -65,6 +56,16 @@
                     <!-- Labels will be dynamically added here -->
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="realityPanel" class="reality-panel hidden" role="dialog" aria-modal="true" aria-labelledby="realityTitle">
+        <div class="reality-panel-inner">
+            <h3 id="realityTitle">Is this real?</h3>
+            <p>Partly.</p>
+            <p>The face detection, age, gender, and emotion scores come from a real machine learning model (<a href="https://github.com/vladmandic/human" target="_blank" rel="noopener">Human</a> by Vladimir Mandic) that runs 100% privately in your browser. No image or data is actually stored or shared. Nothing leaves your device. I have no way to access your webcam data.</p>
+            <p>All other data points ostensibly inferred from your face are fake. You can see the open-source code <a href="https://github.com/staeiou/iiiii" target="_blank" rel="noopener">in this repository</a>.</p>
+            <button id="realityClose" class="reality-close" type="button">Close</button>
         </div>
     </div>
 
