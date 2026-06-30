@@ -196,6 +196,160 @@ body {
     color: #00ff88;
 }
 
+/* Reality disclosure — discreet corner link + reveal panel */
+/* In-card link (title + consent screens): pinned to the card's top-right */
+.instructions-real {
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    margin: 0;
+}
+
+.reality-inline {
+    color: #00ff88;
+    font-size: 0.85rem;
+    text-decoration: underline;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Floating link (main inference): upper-right, black bg, green text */
+.reality-link {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 8;
+    font: inherit;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    color: #00ff88;
+    background: #000;
+    border: 1px solid #00ff88;
+    border-radius: 4px;
+    padding: 0.4rem 0.9rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.reality-link:hover {
+    background: #00ff88;
+    color: #000;
+}
+
+.reality-link.hidden {
+    display: none;
+}
+
+.reality-panel {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 14, 39, 0.95);
+    padding: 1.5rem;
+}
+
+.reality-panel.hidden {
+    display: none;
+}
+
+.reality-panel-inner {
+    max-width: 520px;
+    text-align: left;
+}
+
+.reality-panel-inner h3 {
+    color: #00ff88;
+    font-size: 1.3rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1rem;
+}
+
+.reality-panel-inner p {
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: #e0e0e0;
+    margin-bottom: 0.85rem;
+}
+
+.reality-panel-inner a {
+    color: #00ff88;
+    text-decoration: underline;
+}
+
+.reality-close {
+    margin-top: 0.5rem;
+    font: inherit;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #00ff88;
+    background: transparent;
+    border: 1px solid #00ff88;
+    border-radius: 4px;
+    padding: 0.5rem 1.5rem;
+    cursor: pointer;
+}
+
+.reality-close:hover {
+    background: rgba(0, 255, 136, 0.1);
+}
+
+/* Camera Access Notice */
+.camera-notice {
+    max-width: 460px;
+    padding: 0 1.5rem;
+    margin: 0 auto;
+}
+
+.camera-notice-heading {
+    color: #00ff88;
+    font-size: 1.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1rem;
+}
+
+.camera-notice-body {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    color: #e0e0e0;
+}
+
+.camera-notice-help {
+    font-size: 0.9rem;
+    color: #888;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+.camera-notice-btn {
+    font: inherit;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #00ff88;
+    background: transparent;
+    border: 1px solid #00ff88;
+    border-radius: 4px;
+    padding: 0.6rem 1.75rem;
+    cursor: pointer;
+}
+
+.camera-notice-btn:hover {
+    background: rgba(0, 255, 136, 0.1);
+}
+
+.camera-notice-privacy {
+    margin-top: 1.75rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: #666;
+    border-top: 1px solid #1a1f3a;
+    padding-top: 1rem;
+}
+
 /* Instructions */
 .instructions {
     position: absolute;

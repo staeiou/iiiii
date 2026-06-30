@@ -140,6 +140,12 @@ class KioskApp {
             this.markTime('initStart');
             console.log('🚀 Starting initialization...');
 
+            // Absolute safety net for the original hang bug: a live camera feed
+            // is attached (visible behind the overlay) but init hung downstream
+            // (camera metadata or video.play() never settling on some browsers),
+            // so neither the first-detection nor the 10s fallback ever runs.
+            this.armSafetyTimer();
+
             // Start cycling loading messages and progress bar
             this.startLoadingMessages();
             this.startLoadingProgress();
@@ -162,6 +168,9 @@ class KioskApp {
             this.setupLayoutToggle();
             console.log('✓ setupLayoutToggle complete');
 
+            // Setup the discreet "is this real?" disclosure
+            this.setupRealityDisclosure();
+
             // Start detection loop immediately
             console.log('Starting detection loop...');
             this.detect();
@@ -174,11 +183,7 @@ class KioskApp {
             setTimeout(() => {
                 if (this.waitingForFirstDetection) {
                     console.log('Loading timeout - hiding screen');
-                    this.waitingForFirstDetection = false;
-                    this.stopLoadingMessages();
-                    this.stopLoadingProgress();
-                    this.loading.style.display = 'none';
-                    this.markTime('loadingHidden');
+                    this.hideLoading();
                 }
             }, 10000);
 
@@ -186,7 +191,11 @@ class KioskApp {
         } catch (error) {
             console.error('❌ Initialization error:', error);
             console.error('Error stack:', error.stack);
-            this.showError(error.message);
+            if (error?.isCameraError) {
+                this.showCameraNotice(error.cameraErrorName);
+            } else {
+                this.showError(error.message);
+            }
         }
     }
 
@@ -336,6 +345,15 @@ class KioskApp {
     async initCamera() {
         try {
             console.log('Requesting camera access...');
+
+            // Camera API unavailable (no mediaDevices, or insecure/non-HTTPS context)
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                const e = new Error('Camera API not available in this browser or context');
+                e.isCameraError = true;
+                e.cameraErrorName = window.isSecureContext === false ? 'InsecureContextError' : 'NotSupportedError';
+                throw e;
+            }
+
             const supported = navigator.mediaDevices?.getSupportedConstraints?.() || {};
             console.log('Camera supported constraints:', supported);
 
@@ -364,27 +382,53 @@ class KioskApp {
                 }
             ];
 
-            let stream = null;
-            let lastError = null;
-            for (const attempt of cameraAttempts) {
-                try {
-                    console.log(`getUserMedia attempt: ${attempt.name}`);
-                    stream = await navigator.mediaDevices.getUserMedia({
-                        video: attempt.video,
-                        audio: false
-                    });
-                    console.log(`✓ getUserMedia success: ${attempt.name}`);
-                    break;
-                } catch (error) {
-                    lastError = error;
-                    console.warn(`⚠ getUserMedia failed: ${attempt.name}`, {
-                        name: error?.name,
-                        message: error?.message
-                    });
-                }
-            }
+            // If the user never responds to the browser's permission prompt,
+            // getUserMedia() never settles and the page hangs forever. Race it
+            // against a timeout so we can fall back to the access notice.
+            const CAMERA_TIMEOUT_MS = 20000;
+            let timedOut = false;
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => {
+                    timedOut = true;
+                    const e = new Error('Camera permission was not granted in time');
+                    e.isCameraError = true;
+                    e.cameraErrorName = 'TimeoutError';
+                    reject(e);
+                }, CAMERA_TIMEOUT_MS);
+            });
 
-            if (!stream) throw lastError;
+            const acquire = (async () => {
+                let stream = null;
+                let lastError = null;
+                for (const attempt of cameraAttempts) {
+                    if (timedOut) break;
+                    try {
+                        console.log(`getUserMedia attempt: ${attempt.name}`);
+                        stream = await navigator.mediaDevices.getUserMedia({
+                            video: attempt.video,
+                            audio: false
+                        });
+                        console.log(`✓ getUserMedia success: ${attempt.name}`);
+                        break;
+                    } catch (error) {
+                        lastError = error;
+                        console.warn(`⚠ getUserMedia failed: ${attempt.name}`, {
+                            name: error?.name,
+                            message: error?.message
+                        });
+                    }
+                }
+                if (!stream) throw lastError;
+                return stream;
+            })();
+
+            // If the timeout wins but the camera later resolves, release that
+            // orphaned stream so the camera light doesn't stay on.
+            acquire.then((s) => {
+                if (timedOut && s) s.getTracks().forEach((t) => t.stop());
+            }).catch(() => {});
+
+            const stream = await Promise.race([acquire, timeoutPromise]);
 
             this.video.srcObject = stream;
             console.log('✓ Camera stream obtained');
@@ -448,8 +492,13 @@ class KioskApp {
                 message: error?.message,
                 error: error
             });
-            // Show actual failure reason in UI
-            throw new Error(`Camera start failed: ${error?.name}: ${error?.message}`);
+            // Re-throw camera-API errors (e.g. insecure context) untouched so init() can classify them
+            if (error?.isCameraError) throw error;
+            // Wrap getUserMedia failures with a typed error so init() shows the camera notice
+            const wrapped = new Error(`Camera start failed: ${error?.name}: ${error?.message}`);
+            wrapped.isCameraError = true;
+            wrapped.cameraErrorName = error?.name || 'UnknownError';
+            throw wrapped;
         }
     }
 
@@ -501,6 +550,31 @@ class KioskApp {
             setTimeout(() => this.updateOverlayTransform(), 50);
         });
         setTimeout(() => this.updateOverlayTransform(), 50);
+    }
+
+    setupRealityDisclosure() {
+        const panel = document.getElementById('realityPanel');
+        const closeBtn = document.getElementById('realityClose');
+        if (!panel) return;
+
+        const close = () => panel.classList.add('hidden');
+
+        // The in-card links are recreated when instructions innerHTML changes,
+        // so use delegation: any .reality-trigger opens the panel.
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.reality-trigger')) panel.classList.remove('hidden');
+        });
+        if (closeBtn) closeBtn.addEventListener('click', close);
+        // Tap the dimmed backdrop (outside the text) to dismiss
+        panel.addEventListener('click', (e) => {
+            if (e.target === panel) close();
+        });
+    }
+
+    // The floating link shows only during inference (instruction cards hidden)
+    setRealityLinkVisible(visible) {
+        const link = document.getElementById('realityLink');
+        if (link) link.classList.toggle('hidden', !visible);
     }
 
     updateOverlayTransform() {
@@ -658,13 +732,8 @@ class KioskApp {
 
                     // Hide loading screen on first detection
                     if (this.waitingForFirstDetection) {
-                        this.waitingForFirstDetection = false;
                         console.log('Hiding loading screen...');
-                        this.stopLoadingMessages();
-                        this.stopLoadingProgress();
-                        this.loading.style.display = 'none';
-                        console.log('✓ Loading screen hidden');
-                        this.markTime('loadingHidden');
+                        this.hideLoading();
                     }
 
                     if (this.timingMarks.loadingHidden) {
@@ -810,6 +879,7 @@ class KioskApp {
         if (!this.instructions) return;
         this.instructions.innerHTML = this.defaultInstructionsHtml;
         this.instructions.classList.remove('hidden');
+        this.setRealityLinkVisible(false);
     }
 
     showConsentInstructions(secondsLeft) {
@@ -821,8 +891,10 @@ class KioskApp {
             <p class="instructions-sub">By lingering in frame, you consent to the social-technical contract of surveillance capitalism.</p>
             <p class="instructions-sub">Your likeness will be extracted, mined, correlated, modeled, and used against you in every way.</p>
             <p class="instructions-sub">Opting out is easy: leave this space, abandon this society, and just go live in the wilderness.</p>
+            <p class="instructions-real"><span class="reality-trigger reality-inline">is this real?</span></p>
         `;
         this.instructions.classList.remove('hidden');
+        this.setRealityLinkVisible(false);
     }
 
     startConsentCountdown() {
@@ -865,6 +937,7 @@ class KioskApp {
         this.faceDetected = true;
         this.detectionStartTime = Date.now();
         this.instructions.classList.add('hidden');
+        this.setRealityLinkVisible(true);
         this.faceHoldStart = null;
         this.lastFaceSeen = this.detectionStartTime;
         this.clearLabelTimers();
@@ -1365,6 +1438,11 @@ class KioskApp {
         // Stop everything
         this.destroy();
 
+        // Reset loading/error state so the hide triggers work for this attempt
+        this.loadingHidden = false;
+        this.errorShown = false;
+        this.firstFaceLogged = false;
+
         // Show loading
         this.loading.style.display = 'flex';
         this.loading.innerHTML = `
@@ -1375,12 +1453,16 @@ class KioskApp {
             </div>
         `;
 
+        // Same safety net as init(): never let this retry hang the overlay.
+        this.armSafetyTimer();
+
         try {
             // Re-init camera (models already loaded)
             await this.initCamera();
 
             // Hide loading
-            this.loading.style.display = 'none';
+            this.waitingForFirstDetection = true;
+            this.hideLoading();
 
             // Restart detection
             this.detect();
@@ -1388,7 +1470,11 @@ class KioskApp {
             console.log('✓ Soft reset complete');
         } catch (error) {
             console.error('❌ Soft reset failed:', error);
-            this.showError(error.message);
+            if (error?.isCameraError) {
+                this.showCameraNotice(error.cameraErrorName);
+            } else {
+                this.showError(error.message);
+            }
         }
     }
 
@@ -1401,7 +1487,45 @@ class KioskApp {
         this.labelTimeouts = [];
     }
 
+    armSafetyTimer() {
+        if (this.safetyTimer) clearTimeout(this.safetyTimer);
+        this.safetyTimer = setTimeout(() => {
+            const feedUp = this.video?.srcObject && this.video.readyState >= 2;
+            if (feedUp) {
+                // Feed is live but the overlay is stuck — drop it.
+                console.warn('Safety timeout - live feed but overlay stuck; hiding overlay');
+                this.hideLoading();
+            }
+            // If there's no feed, the camera-acquisition timeout owns that case
+            // and shows the access notice — don't blank the overlay here.
+        }, 20000);
+    }
+
+    hideLoading() {
+        // Idempotent: any of several independent triggers (first detection,
+        // 10s fallback, 20s safety net) may call this; only the first wins.
+        if (this.loadingHidden) return;
+        // Never tear down a visible error/permission notice.
+        if (this.errorShown) return;
+        this.loadingHidden = true;
+        this.waitingForFirstDetection = false;
+        if (this.safetyTimer) {
+            clearTimeout(this.safetyTimer);
+            this.safetyTimer = null;
+        }
+        this.stopLoadingMessages();
+        this.stopLoadingProgress();
+        if (this.loading) this.loading.style.display = 'none';
+        this.markTime('loadingHidden');
+        console.log('✓ Loading screen hidden');
+    }
+
     showError(message) {
+        this.errorShown = true;
+        if (this.safetyTimer) {
+            clearTimeout(this.safetyTimer);
+            this.safetyTimer = null;
+        }
         this.loading.innerHTML = `
             <div class="loading-content">
                 <h2 style="color: #ff0066; margin-bottom: 1rem;">System Error</h2>
@@ -1409,6 +1533,90 @@ class KioskApp {
                 <p class="loading-sub" style="margin-top: 1rem;">Please refresh the page to try again.</p>
             </div>
         `;
+    }
+
+    showCameraNotice(errorName) {
+        // Map the DOMException name to a plain explanation
+        const notices = {
+            denied: {
+                heading: 'Camera access blocked',
+                body: 'This page needs your camera to run, but the browser blocked access.',
+                help: 'Open the camera permission for this site (the icon in the address bar, or Site Settings), set it to Allow, then try again.'
+            },
+            timeout: {
+                heading: 'Waiting for camera permission',
+                body: 'The browser asked for camera access but did not get an answer.',
+                help: 'Allow camera access when your browser asks, then try again.'
+            },
+            notfound: {
+                heading: 'No camera found',
+                body: 'No camera was detected on this device.',
+                help: 'Connect a camera, or use a device that has one, then try again.'
+            },
+            inuse: {
+                heading: 'Camera in use',
+                body: 'The camera is already being used by another app or browser tab.',
+                help: 'Close anything else using the camera, then try again.'
+            },
+            unsupported: {
+                heading: 'Camera not supported',
+                body: 'This browser does not support the camera features this page needs.',
+                help: 'Try a current version of Chrome, Firefox, Safari, or Edge, then reload.'
+            },
+            insecure: {
+                heading: 'Secure connection required',
+                body: 'Browsers only allow camera access over a secure (HTTPS) connection.',
+                help: 'Open this page over https (or localhost), then try again.'
+            },
+            generic: {
+                heading: 'Camera unavailable',
+                body: 'The camera could not be started.',
+                help: 'Check the site camera permission and that no other app is using it, then try again.'
+            }
+        };
+
+        const typeByName = {
+            NotAllowedError: 'denied',
+            PermissionDeniedError: 'denied',
+            SecurityError: 'denied',
+            TimeoutError: 'timeout',
+            NotFoundError: 'notfound',
+            DevicesNotFoundError: 'notfound',
+            OverconstrainedError: 'notfound',
+            ConstraintNotSatisfiedError: 'notfound',
+            NotReadableError: 'inuse',
+            TrackStartError: 'inuse',
+            AbortError: 'inuse',
+            NotSupportedError: 'unsupported',
+            TypeError: 'unsupported',
+            InsecureContextError: 'insecure'
+        };
+
+        const notice = notices[typeByName[errorName]] || notices.generic;
+
+        this.errorShown = true;
+        if (this.safetyTimer) {
+            clearTimeout(this.safetyTimer);
+            this.safetyTimer = null;
+        }
+        this.loading.style.display = 'flex';
+        this.loading.innerHTML = `
+            <div class="loading-content camera-notice">
+                <h2 class="camera-notice-heading">${notice.heading}</h2>
+                <p class="camera-notice-body">${notice.body}</p>
+                <p class="camera-notice-help">${notice.help}</p>
+                <button type="button" id="cameraRetryBtn" class="camera-notice-btn">Try again</button>
+                <p class="camera-notice-privacy">All processing happens on your device. No images or data are stored or sent anywhere; everything stays in your browser.</p>
+            </div>
+        `;
+
+        const retryBtn = this.loading.querySelector('#cameraRetryBtn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => {
+                console.log('Camera notice: retry requested');
+                this.softReset();
+            });
+        }
     }
 
     destroy() {

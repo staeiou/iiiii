@@ -43,6 +43,19 @@
                     <h2>Who Does AI Think You <i>Really</i> Are?</h2>
                     <p>Please put your face in the camera view to begin inference.</p>
                     <p class="instructions-sub">All data will be kept private, until we lose our funding and have to sell it to the highest bidder. Thank you for your consent!</p>
+                    <p class="instructions-real"><span class="reality-trigger reality-inline">is this real?</span></p>
+                </div>
+
+                <!-- Reality disclosure: in-card link above; this floating one shows during inference -->
+                <button id="realityLink" class="reality-link reality-trigger hidden" type="button">is this real?</button>
+                <div id="realityPanel" class="reality-panel hidden">
+                    <div class="reality-panel-inner">
+                        <h3>Is this real?</h3>
+                        <p>Partly.</p>
+                        <p>The face detection, age, gender, and emotion scores come from a real machine learning model (<a href="https://github.com/vladmandic/human" target="_blank" rel="noopener">Human</a> by Vladimir Mandic) that runs 100% privately in your browser. No image or data is actually stored or shared. Nothing leaves your device. I have no way to actuallky access your webcam data.</p>
+                        <p>All other data points ostensibly inferred from your face are fake.</p>
+                        <button id="realityClose" class="reality-close" type="button">Close</button>
+                    </div>
                 </div>
             </div>
 
