@@ -53,7 +53,6 @@ class KioskApp {
             exact: {
                 Confidence: { mode: 'gradient', parse: 'percent', range: { min: 0, max: 100 } },
                 Age: { mode: 'gradient', parse: 'number', range: { min: 0, max: 100 } },
-                Gender: { mode: 'gradient', parse: 'percent', range: { min: 0, max: 100 } },
                 'Exhaustion Level': { mode: 'gradient', parse: 'percent', range: { min: 12, max: 98 } },
                 'Stress Level': { mode: 'gradient', parse: 'percent', range: { min: 8, max: 99 } },
                 'Energy Level': { mode: 'gradient', parse: 'percent', range: { min: 6, max: 97 } },
@@ -1158,7 +1157,7 @@ class KioskApp {
                 separator: ': '
             };
         }
-        const prefixes = ['Confidence', 'Age', 'Gender', 'Emotion'];
+        const prefixes = ['Confidence', 'Age', 'Emotion'];
         for (const prefix of prefixes) {
             if (trimmed.startsWith(`${prefix} `)) {
                 return {
@@ -1301,10 +1300,6 @@ class KioskApp {
         const lines = [];
         // Confidence line removed
         if (face.age !== undefined) lines.push(`Age ${Math.round(face.age)} years`);
-        if (face.gender) {
-            const genderScore = face.genderScore !== undefined ? ` ${Math.round(face.genderScore * 100)}%` : '';
-            lines.push(`Gender ${face.gender}${genderScore}`);
-        }
         const topEmotion = this.getTopEmotion(face.emotion);
         if (topEmotion) lines.push(`Emotion ${topEmotion}`);
         if (this.faceLabelQueue.length) {
